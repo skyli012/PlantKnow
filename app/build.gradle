@@ -3,19 +3,39 @@ plugins {
     alias(libs.plugins.kotlin.android)
 }
 
+// 读取 local.properties 配置
+def getLocalProperty(String key) {
+    Properties properties = new Properties()
+    properties.load(project.rootProject.file('local.properties').newDataInputStream())
+    return properties.getProperty(key)
+}
+
 android {
     namespace 'com.hailong.plantknow'
-    compileSdk 35
+    compileSdk 34
+
+    // 添加这行来启用 BuildConfig 功能
+    buildFeatures {
+        buildConfig = true
+    }
 
     defaultConfig {
         applicationId "com.hailong.plantknow"
         minSdk 24
-        targetSdk 35
+        targetSdk 34
         versionCode 1
         versionName "1.0"
 
+        // 注入 BAIDU_API_TOKEN
+        buildConfigField "String", "BAIDU_API_TOKEN", "\"${getLocalProperty('BAIDU_API_TOKEN')}\""
+        buildConfigField "String", "BAIDU_API_KEY", "\"${getLocalProperty('API_KEY')}\""
+        buildConfigField "String", "BAIDU_SECRET_KEY", "\"${getLocalProperty('SECRET_KEY')}\""
+        // 定义 BuildConfig 字段
+        buildConfigField "String", "API_BASE_URL", "\"${getLocalProperty('API_BASE_URL') ?: ''}\""
+
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
+
 
     buildTypes {
         release {
