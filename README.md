@@ -133,8 +133,8 @@ Run > Run 'app'
 
 **李海龙 (Hailong Li)**  
 🎓 重庆科技大学 · 智能科学与技术  
-📧 Email: your_email@example.com  
-🌐 GitHub: [@your-username](https://github.com/your-username)
+📧 Email: lihailong2077@163.com  
+🌐 GitHub: [skyli012]([https://github.com/your-username](https://github.com/skyli012))
 
 ---
 
