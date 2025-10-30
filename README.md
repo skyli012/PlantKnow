@@ -1,3 +1,6 @@
+<div align="center">
+  <img src="docs/icons/app_icon.webp" alt="PlantKnow App Icon" width="120" />
+</div>
 # 🌿 PlantKnow - 植物识别 Android 应用
 [![Kotlin](https://img.shields.io/badge/Kotlin-1.9.0-blue.svg?logo=kotlin)](https://kotlinlang.org)
 [![Compose](https://img.shields.io/badge/Jetpack%20Compose-1.5.0-brightgreen.svg)](https://developer.android.com/jetpack/compose)
