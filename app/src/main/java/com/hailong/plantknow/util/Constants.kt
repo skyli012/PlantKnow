@@ -34,6 +34,12 @@ object Constants {
      */
     const val SECRET_KEY = BuildConfig.BAIDU_SECRET_KEY
 
+    // ==================== 阿里平台认证信息 ====================
+    const val ALIYUN_BASE_URL = "https://dashscope.aliyuncs.com/"
+    const val QWEN_FLASH_MODEL = "qwen-flash"
+    // 阿里云API Key - 从BuildConfig读取
+    const val DASHSCOPE_API_KEY = BuildConfig.ALI_API_KEY
+
     // ==================== API 基础配置 ====================
 
     /**

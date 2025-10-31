@@ -3,6 +3,7 @@ import com.hailong.plantknow.util.Constants
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import retrofit2.create
 import java.util.concurrent.TimeUnit
 
 /**
@@ -44,5 +45,16 @@ object ApiClient {
                 .build()
         }
         return retrofit!!
+    }
+
+    // 阿里云API客户端
+    private val aliyunRetrofit = Retrofit.Builder()
+        .baseUrl(Constants.ALIYUN_BASE_URL)
+        .client(com.hailong.plantknow.network.ApiClient.okHttpClient) // 复用现有的okHttpClient
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
+
+    val aliyunApiService: AliyunApiService by lazy {
+        aliyunRetrofit.create(AliyunApiService::class.java)
     }
 }
