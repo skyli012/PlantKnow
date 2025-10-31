@@ -1,10 +1,12 @@
-# 🌿 PlantKnow - 植物识别 Android 应用
-[![Kotlin](https://img.shields.io/badge/Kotlin-1.9.0-blue.svg?logo=kotlin)](https://kotlinlang.org)
-[![Compose](https://img.shields.io/badge/Jetpack%20Compose-1.5.0-brightgreen.svg)](https://developer.android.com/jetpack/compose)
-[![Architecture](https://img.shields.io/badge/Architecture-MVVM%20%2B%20Coroutines-orange.svg)](https://developer.android.com/topic/architecture)
-[![API](https://img.shields.io/badge/API-21%2B-yellow.svg)](https://android-arsenal.com/api?level=21)
 <div align="center">
-  <img src="docs/icons/ic_launcher.webp" alt="PlantKnow App Icon" width="120" />
+
+# 🌿 PlantKnow - 植物识别 Android 应用
+
+[![Kotlin](https://img.shields.io/badge/Kotlin-1.9.0-blue.svg?logo=kotlin)](https://kotlinlang.org) [![Compose](https://img.shields.io/badge/Jetpack%20Compose-1.5.0-brightgreen.svg)](https://developer.android.com/jetpack/compose) [![Architecture](https://img.shields.io/badge/Architecture-MVVM%20%2B%20Coroutines-orange.svg)](https://developer.android.com/topic/architecture) [![API](https://img.shields.io/badge/API-21%2B-yellow.svg)](https://android-arsenal.com/api?level=21)
+
+</div>
+<div align="center">
+  <img src="docs/icons/ic_launcher_foreground.webp" alt="PlantKnow App Icon" width="120" />
 </div>
 
 > 一款基于 **百度AI开放平台** 的智能植物识别 App，使用 **Kotlin + Jetpack Compose + MVVM** 架构打造，支持拍照识别、相册选取、云端识别与百科展示，全流程流畅高效。
