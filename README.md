@@ -70,9 +70,9 @@
 
 （以下为示例，请替换为你的截图）
 
-| 首页 | 识别结果 | 百科详情 |
-|------|-----------|----------|
-| ![screenshot1](docs/screenshot1.png) | ![screenshot2](docs/screenshot2.png) | ![screenshot3](docs/screenshot3.png) |
+| 首页 | 识别结果 |  
+|------|-----------|
+| ![screenshot1](docs/show/home_page.png) | ![screenshot2](docs/show/recognition.png) |
 
 ---
 
@@ -80,17 +80,45 @@
 
 ```
 PlantKnow/
-├── app/                  # UI 层（Jetpack Compose 界面）
-│   ├── ui/
-│   ├── viewmodel/
-│   └── navigation/
-├── data/                 # 数据仓库与 Repository 层
-│   ├── repository/
-│   └── model/
-├── network/              # 网络模块（Retrofit、API封装）
-│   └── BaiduApiService.kt
-├── utils/                # 工具类与扩展函数
-└── build.gradle
+├── app/                  # 应用主模块（UI + 业务逻辑）
+│   ├── data/             # 数据层：Model + Repository
+│   │   ├── model/        # 数据模型（DTO / Entity）
+│   │   │   ├── PlantResult.kt
+│   │   │   ├── PlantWithDetails.kt
+│   │   │   └── RecognitionResponse.kt
+│   │   ├── repository/   # 数据仓库
+│   │   │   └── PlantRecognitionRepository.kt
+│   │   └── network/      # 网络相关
+│   │       ├── ApiClient.kt
+│   │       ├── ApiService.kt
+│   │       ├── AliyunApiService.kt
+│   │       └── AuthHelper.kt
+│   │
+│   ├── ui/               # UI 层（Jetpack Compose）
+│   │   ├── screen/       # 各个页面组件
+│   │   │   ├── SplashScreen.kt
+│   │   │   └── MainScreen.kt
+│   │   │
+│   │   ├── state/        # UI 状态管理（State 类）
+│   │   │   ├── PlantUIState.kt
+│   │   │   └── MainScreen.kt
+│   │   │
+│   │   └── util/         # UI 工具类
+│   │       ├── Constants.kt
+│   │       ├── ImageUtils.kt
+│   │       └── Result.kt
+│   │
+│   ├── viewmodel/        # ViewModel 层（业务逻辑处理）
+│   │   ├── PlantViewModel.kt
+│   │   └── PlantViewModelFactory.kt
+│   │
+│   ├── navigation/       # 导航逻辑（Navigation Graph）
+│   │   └── AppNavigation.kt
+│   │
+│   └── MainActivity.kt   # 入口 Activity
+│
+├── build.gradle          # 模块级构建配置
+└── settings.gradle       # 项目根目录配置（可选）
 ```
 
 
