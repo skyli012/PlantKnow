@@ -93,32 +93,6 @@ PlantKnow/
 └── build.gradle
 ```
 
----
-
-## 🚀 快速开始
-
-### 1️⃣ 克隆项目
-```bash
-git clone https://github.com/<your-username>/PlantKnow.git
-```
-
-### 2️⃣ 获取百度AI API Key
-前往 [百度AI开放平台](https://ai.baidu.com/tech/imagerecognition/plant)  
-申请 **API Key** 与 **Secret Key**，填入项目配置文件中：
-
-```kotlin
-const val API_KEY = "your_api_key"
-const val SECRET_KEY = "your_secret_key"
-```
-
-### 3️⃣ 运行项目
-打开 **Android Studio (Giraffe+ 或更高版本)**，选择设备后运行：
-
-```bash
-Run > Run 'app'
-```
-
----
 
 ## 🧪 性能表现
 
