@@ -68,8 +68,6 @@
 
 ## 🖼️ 应用界面预览
 
-（以下为示例，请替换为你的截图）
-
 | 首页 | 识别结果 |  
 |------|-----------|
 | ![screenshot1](docs/show/home_page.png) | ![screenshot2](docs/show/recognition.png) |
