@@ -35,9 +35,8 @@ class PlantRecognitionRepository(private val context: Context) {
             val base64Image = ImageUtils.bitmapToBase64(bitmap)
 
             // 步骤2: 获取并处理访问令牌
-            val tokenWithBearer = AuthHelper.getValidAccessToken()
+            val pureToken = AuthHelper.getValidAccessToken()
             // 移除Bearer前缀，适配百度API的认证格式要求
-            val pureToken = tokenWithBearer.replace("Bearer ", "")
 
             // 步骤3: 调用百度植物识别API
             Log.d("PlantRepository", "调用百度植物识别API...")

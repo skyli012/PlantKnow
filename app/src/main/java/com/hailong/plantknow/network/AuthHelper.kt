@@ -50,7 +50,7 @@ object AuthHelper {
         if (cachedToken != null && currentTimestamp < expiresAt) {
             // Token有效，直接返回
             Log.d("AuthHelper", "使用缓存的 Token")
-            return@withContext "Bearer $cachedToken"
+            return@withContext "$cachedToken"
         }
 
         Log.d("AuthHelper", "Token已过期或不存在，获取新Token")
