@@ -57,7 +57,7 @@ object AuthHelper {
 
         // 需要获取新Token
         try {
-            val response = ApiClient.apiService.getAccessToken(
+            val response = ApiClient.baiduApiService.getAccessToken(
                 grantType = Constants.GRANT_TYPE,
                 clientId = Constants.API_KEY,
                 clientSecret = Constants.SECRET_KEY

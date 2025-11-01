@@ -46,7 +46,7 @@ object Constants {
      * 百度AI API的基础URL
      * 所有API请求都基于这个URL构建
      */
-    const val BASE_URL = "https://aip.baidubce.com/"
+    const val BAIDU_BASE_URL = "https://aip.baidubce.com/"
 
     // ==================== Token 认证相关 ====================
 

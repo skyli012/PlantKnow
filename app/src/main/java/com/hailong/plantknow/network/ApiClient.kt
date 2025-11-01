@@ -1,60 +1,70 @@
 package com.hailong.plantknow.network
+
 import com.hailong.plantknow.util.Constants
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import retrofit2.create
 import java.util.concurrent.TimeUnit
 
 /**
  * Retrofit客户端管理器
- * 负责创建和提供ApiService实例
+ * 负责创建并提供百度AI与阿里云大模型的ApiService实例
  */
 object ApiClient {
-    private var retrofit: Retrofit? = null
-    private lateinit var okHttpClient: OkHttpClient
 
-    /**
-     * 获取ApiService实例
-     */
-    val apiService: ApiService by lazy {
-        getRetrofit().create(ApiService::class.java)
-    }
+    // Retrofit 实例缓存
+    private var baiduRetrofit: Retrofit? = null
+    private var aliyunRetrofit: Retrofit? = null
 
-    /**
-     * 初始化OkHttpClient（带超时设置）
-     */
-    init {
-        okHttpClient = OkHttpClient.Builder()
+    // OkHttp 配置
+    private val okHttpClient: OkHttpClient by lazy {
+        OkHttpClient.Builder()
             .connectTimeout(Constants.CONNECT_TIMEOUT_SEC, TimeUnit.SECONDS)
             .readTimeout(Constants.READ_TIMEOUT_SEC, TimeUnit.SECONDS)
             .writeTimeout(Constants.WRITE_TIMEOUT_SEC, TimeUnit.SECONDS)
-            // 可以在这里添加Interceptor，如日志、Token自动添加等
+            // 可选：添加拦截器，如日志、Token自动添加等
             .build()
     }
 
     /**
-     * 获取Retrofit实例
+     * 获取 BaiduApiService 实例
      */
-    private fun getRetrofit(): Retrofit {
-        if (retrofit == null) {
-            retrofit = Retrofit.Builder()
-                .baseUrl(Constants.BASE_URL)
+    val baiduApiService: BaiduApiService by lazy {
+        getBaiduRetrofit().create(BaiduApiService::class.java)
+    }
+
+    /**
+     * 获取 AliyunApiService 实例
+     */
+    val aliyunApiService: AliyunApiService by lazy {
+        getAliyunRetrofit().create(AliyunApiService::class.java)
+    }
+
+    /**
+     * 构建或获取百度AI Retrofit实例（懒加载）
+     */
+    private fun getBaiduRetrofit(): Retrofit {
+        if (baiduRetrofit == null) {
+            baiduRetrofit = Retrofit.Builder()
+                .baseUrl(Constants.BAIDU_BASE_URL)
                 .client(okHttpClient)
                 .addConverterFactory(GsonConverterFactory.create())
                 .build()
         }
-        return retrofit!!
+        return baiduRetrofit!!
     }
 
-    // 阿里云API客户端
-    private val aliyunRetrofit = Retrofit.Builder()
-        .baseUrl(Constants.ALIYUN_BASE_URL)
-        .client(com.hailong.plantknow.network.ApiClient.okHttpClient) // 复用现有的okHttpClient
-        .addConverterFactory(GsonConverterFactory.create())
-        .build()
-
-    val aliyunApiService: AliyunApiService by lazy {
-        aliyunRetrofit.create(AliyunApiService::class.java)
+    /**
+     * 构建或获取阿里云大模型 Retrofit实例（懒加载）
+     */
+    private fun getAliyunRetrofit(): Retrofit {
+        if (aliyunRetrofit == null) {
+            aliyunRetrofit = Retrofit.Builder()
+                .baseUrl(Constants.ALIYUN_BASE_URL)
+                .client(okHttpClient)
+                .addConverterFactory(GsonConverterFactory.create())
+                .build()
+        }
+        return aliyunRetrofit!!
     }
 }

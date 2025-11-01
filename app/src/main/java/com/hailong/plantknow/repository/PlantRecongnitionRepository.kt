@@ -40,7 +40,7 @@ class PlantRecognitionRepository(private val context: Context) {
 
             // 步骤3: 调用百度植物识别API
             Log.d("PlantRepository", "调用百度植物识别API...")
-            val response = ApiClient.apiService.recognizePlant(
+            val response = ApiClient.baiduApiService.recognizePlant(
                 accessToken = pureToken,
                 image = base64Image,
                 baikeNum = 1  // 请求百科信息数量

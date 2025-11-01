@@ -8,7 +8,7 @@ import retrofit2.Response
 /**
  * 百度AI平台API服务接口
  */
-interface ApiService {
+interface BaiduApiService {
 
     /**
      * 获取Access Token
