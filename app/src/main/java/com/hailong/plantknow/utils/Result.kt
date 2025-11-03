@@ -1,4 +1,4 @@
-package com.hailong.plantknow.util
+package com.hailong.plantknow.utils
 
 /**
  * 通用的结果包装类

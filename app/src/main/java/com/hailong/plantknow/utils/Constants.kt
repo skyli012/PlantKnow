@@ -1,4 +1,4 @@
-package com.hailong.plantknow.util
+package com.hailong.plantknow.utils
 
 import com.hailong.plantknow.BuildConfig
 

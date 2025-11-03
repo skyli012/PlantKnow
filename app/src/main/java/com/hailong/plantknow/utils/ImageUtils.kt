@@ -1,4 +1,4 @@
-package com.hailong.plantknow.util
+package com.hailong.plantknow.utils
 
 import android.content.ContentResolver
 import android.content.Context
