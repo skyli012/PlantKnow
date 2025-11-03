@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="black">#FF000000</color>
+    <color name="background_zen">#FFFAF5F0</color> <!-- 浅米色背景 -->
+    <color name="primary_color">#FF6D5D34</color> <!-- 深金色 -->
+    <color name="card_background">#CC2B2B2B</color> <!-- 半透明黑色 -->
     <color name="white">#FFFFFFFF</color>
+    <color name="black">#FF000000</color>
+    <color name="hint_color">#80FFFFFF</color> <!-- 半透明白色 -->
+    <color name="splash_background">#FFE9F0F8</color>
 </resources>

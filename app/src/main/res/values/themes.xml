@@ -3,7 +3,10 @@
     <style name="Base.Theme.PlantKnow" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Customize your light theme here. -->
         <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <!-- 添加窗口背景色，与开屏背景一致 -->
+        <item name="android:windowBackground">@color/splash_background</item>
     </style>
 
     <style name="Theme.PlantKnow" parent="Base.Theme.PlantKnow" />
+
 </resources>

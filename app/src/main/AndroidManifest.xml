@@ -1,6 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.hailong.plantknow"
     xmlns:tools="http://schemas.android.com/tools">
+    <uses-permission android:name="android.permission.CAMERA" />
+    <!-- Android 12及以下备用存储权限 -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="32" tools:ignore="ScopedStorage" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" /> <!-- 为后续语音预留 -->
+    <!-- 告诉系统这个应用需要相机 -->
+    <uses-feature android:name="android.hardware.camera" android:required="true" />
+    <!-- Android 13+ 存储权限（照片和视频） -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <!-- ✅ 添加这一行 -->
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application
