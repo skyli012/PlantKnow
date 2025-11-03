@@ -1,81 +1,64 @@
 package com.hailong.plantknow.ui
 
-import android.content.ContentResolver
 import android.graphics.Bitmap
 import android.net.Uri
-import android.util.Log
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.animateColor
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.rememberAsyncImagePainter
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import com.hailong.plantknow.R
-import com.hailong.plantknow.model.confidencePercent
-import com.hailong.plantknow.model.description
-import com.hailong.plantknow.viewModel.PlantViewModel
-import com.hailong.plantknow.viewModel.PlantViewModelFactory
-import kotlin.contracts.contract
+import com.hailong.plantknow.database.FavoritePlantDatabase
+import com.hailong.plantknow.repository.FavoriteRepository
+import com.hailong.plantknow.ui.screen.FavoriteListScreen
+import com.hailong.plantknow.ui.screen.FavoriteDetailScreen
+import com.hailong.plantknow.viewmodel.FavoriteViewModel
+import com.hailong.plantknow.viewmodel.FavoriteViewModelFactory
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.runtime.collectAsState
+import com.hailong.plantknow.ui.component.ErrorCard
+import com.hailong.plantknow.ui.component.LoadingContent
+import com.hailong.plantknow.ui.component.PlantBasicInfoWithStickyHeader
+import com.hailong.plantknow.ui.component.PlantDetailsWithStickyHeader
+import com.hailong.plantknow.ui.component.WelcomeContent
+import com.hailong.plantknow.utils.ImageSaver
+import com.hailong.plantknow.viewmodel.PlantViewModel
+import com.hailong.plantknow.viewmodel.PlantViewModelFactory
+import kotlinx.coroutines.launch
 
 /**
  * 主屏幕Composable函数
  * 负责图片选择、预览和AI植物识别结果显示
  * @param viewModel 植物识别ViewModel，负责状态管理和业务逻辑
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
     viewModel: PlantViewModel = viewModel(
@@ -95,9 +78,57 @@ fun MainScreen(
         onDispose {}
     }
 
-    // 观察UI状态
+    // 观察UI状态 - 使用正确的类型
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+
+    val imageSaver = remember { ImageSaver(context) }
+
+    val favoriteViewModel: FavoriteViewModel = viewModel(
+        factory = FavoriteViewModelFactory(
+            FavoriteRepository(
+                FavoritePlantDatabase.getInstance(context).favoritePlantDao(),
+                imageSaver
+            )
+        )
+    )
+
+    // 页面状态
+    var showFavorites by remember { mutableStateOf(false) }
+    var selectedFavorite by remember { mutableStateOf<com.hailong.plantknow.model.FavoritePlant?>(null) }
+
+    // 滑动相关状态
+    val slideOffset = remember { Animatable(0f) }
+    val maxSlideOffset = 1000f // 最大滑动距离
+    val coroutineScope = rememberCoroutineScope()
+
+    // 计算进度 (0f - 1f)
+    val progress by remember { derivedStateOf { slideOffset.value / maxSlideOffset } }
+
+    // 是否显示识别结果（用于控制返回键行为）
+    val hasRecognitionResult = remember {
+        derivedStateOf {
+            uiState.plantWithDetails != null || uiState.result != null || uiState.error != null
+        }
+    }
+
+    // 处理返回键
+    BackHandler(enabled = showFavorites || hasRecognitionResult.value) {
+        when {
+            selectedFavorite != null -> {
+                selectedFavorite = null
+            }
+            showFavorites -> {
+                coroutineScope.launch {
+                    slideOffset.animateTo(0f, animationSpec = tween(300))
+                    showFavorites = false
+                }
+            }
+            hasRecognitionResult.value -> {
+                viewModel.clearRecognitionResult()
+            }
+        }
+    }
 
     /**
      * 创建相册选择启动器
@@ -127,20 +158,227 @@ fun MainScreen(
         }
     }
 
-    val bgColor = Color(0xFFE9F0F8) // 背景颜色
+    // 使用Scaffold布局（移除topBar参数）
+    Scaffold(
+        containerColor = Color(0xFFE9F0F8)
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .pointerInput(hasRecognitionResult.value) { // 添加依赖，当识别结果状态变化时重新创建
+                    detectHorizontalDragGestures(
+                        onDragEnd = {
+                            coroutineScope.launch {
+                                // 只有在没有识别结果时才允许切换到收藏页面
+                                if (slideOffset.value > maxSlideOffset * 0.6f && !showFavorites && !hasRecognitionResult.value) {
+                                    // 滑动超过60%，切换到收藏页面
+                                    slideOffset.animateTo(maxSlideOffset, animationSpec = tween(300))
+                                    showFavorites = true
+                                } else if (slideOffset.value < maxSlideOffset * 0.4f && showFavorites) {
+                                    // 滑动不足40%，回到主页面
+                                    slideOffset.animateTo(0f, animationSpec = tween(300))
+                                    showFavorites = false
+                                } else {
+                                    // 保持当前状态
+                                    if (showFavorites) {
+                                        slideOffset.animateTo(maxSlideOffset, animationSpec = tween(300))
+                                    } else {
+                                        slideOffset.animateTo(0f, animationSpec = tween(300))
+                                    }
+                                }
+                            }
+                        }
+                    ) { change, dragAmount ->
+                        // 在有识别结果时禁用向右滑动
+                        if (hasRecognitionResult.value && dragAmount > 0) {
+                            // 有识别结果且向右滑动，不处理
+                            return@detectHorizontalDragGestures
+                        }
 
-    // 主布局：使用Box布局来叠加毛玻璃效果
+                        // 优化：实时更新showFavorites状态，让主界面能实时显示
+                        val newOffset = when {
+                            !showFavorites -> (slideOffset.value + dragAmount).coerceIn(0f, maxSlideOffset)
+                            else -> (slideOffset.value + dragAmount).coerceIn(0f, maxSlideOffset)
+                        }
+
+                        coroutineScope.launch {
+                            slideOffset.snapTo(newOffset)
+
+                            // 实时更新页面状态，让界面能及时响应
+                            if (newOffset > maxSlideOffset * 0.5f && !showFavorites) {
+                                showFavorites = true
+                            } else if (newOffset < maxSlideOffset * 0.5f && showFavorites) {
+                                showFavorites = false
+                            }
+                        }
+                    }
+                }
+        ) {
+            // 收藏页面 - 从左侧进入
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        // 优化：收藏页面从左侧滑入，实时跟随手指移动
+                        translationX = -maxSlideOffset + slideOffset.value
+                        alpha = progress
+                    }
+            ) {
+                // 优化：只要进度大于0就显示收藏页面，确保滑动时能实时看到
+                if (progress > 0.01f) {
+                    if (selectedFavorite != null) {
+                        FavoriteDetailScreen(
+                            favoritePlant = selectedFavorite!!,
+                            onBackClick = { selectedFavorite = null }
+                        )
+                    } else {
+                        FavoriteListScreen(
+                            favoriteViewModel = favoriteViewModel,
+                            onBackClick = {
+                                coroutineScope.launch {
+                                    slideOffset.animateTo(0f, animationSpec = tween(300))
+                                    showFavorites = false
+                                }
+                            },
+                            onItemClick = { favorite -> selectedFavorite = favorite }
+                        )
+                    }
+                }
+            }
+
+            // 主页面 - 向右移动并逐渐消失
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        // 优化：主页面实时跟随手指移动
+                        translationX = slideOffset.value * 0.3f
+                        alpha = 1f - progress
+                        scaleX = 1f - progress * 0.1f
+                        scaleY = 1f - progress * 0.1f
+                    }
+            ) {
+                // 优化：只要进度小于0.99就显示主页面，确保滑动时能实时看到
+                if (progress < 0.99f) {
+                    MainContent(
+                        uiState = uiState,
+                        favoriteViewModel = favoriteViewModel,
+                        pickImageLauncher = pickImageLauncher,
+                        takePictureLauncher = takePictureLauncher,
+                        hasRecognitionResult = hasRecognitionResult.value,
+                        paddingValues = paddingValues,
+                        onUserIconClick = {
+                            coroutineScope.launch {
+                                slideOffset.animateTo(maxSlideOffset, animationSpec = tween(300))
+                                showFavorites = true
+                            }
+                        }
+                    )
+                }
+            }
+
+            // 滑动提示 - 只在主页面显示且没有识别结果时显示
+            if (progress > 0.1f && progress < 0.9f && !showFavorites && !hasRecognitionResult.value) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .alpha(progress * 0.7f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = if (progress > 0.5f) "" else "",
+                        color = Color(0xFF364858),
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier
+                            .background(
+                                color = Color(0xFFE9F0F8).copy(alpha = 0.8f),
+                                shape = RoundedCornerShape(16.dp)
+                            )
+                            .padding(16.dp)
+                    )
+                }
+            }
+
+            // 从收藏页面返回的滑动提示
+            if (progress > 0.1f && progress < 0.9f && showFavorites) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .alpha((1f - progress) * 0.7f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = if (progress < 0.5f) "" else "",
+                        color = Color(0xFF364858),
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier
+                            .background(
+                                color = Color(0xFFE9F0F8).copy(alpha = 0.8f),
+                                shape = RoundedCornerShape(16.dp)
+                            )
+                            .padding(16.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MainContent(
+    uiState: com.hailong.plantknow.viewmodel.PlantViewModel.PlantRecognitionState,
+    favoriteViewModel: FavoriteViewModel,
+    pickImageLauncher: androidx.activity.compose.ManagedActivityResultLauncher<String, Uri?>,
+    takePictureLauncher: androidx.activity.compose.ManagedActivityResultLauncher<Void?, Bitmap?>,
+    hasRecognitionResult: Boolean,
+    paddingValues: PaddingValues,
+    onUserIconClick: () -> Unit
+) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(bgColor)
+            .background(Color(0xFFE9F0F8))
+            .padding(paddingValues)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(20.dp)
+                .padding(horizontal = 20.dp, vertical = 16.dp)
         ) {
-            // 顶部：图片预览区域（仅在选择了图片时显示）
+            // 顶部区域 - 只显示用户图标在左侧
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 24.dp)
+            ) {
+                // 用户图标 - 只在初始状态显示（没有选择图片、没有加载、没有识别结果）
+                if (uiState.selectedImage == null && !uiState.isLoading && !hasRecognitionResult) {
+                    IconButton(
+                        onClick = onUserIconClick,
+                        modifier = Modifier
+                            .size(48.dp)
+                            .background(
+                                color = Color(0xFFE9F0F8).copy(alpha = 0.1f),
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = "查看收藏",
+                            tint = Color(0xFF364858),
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
+
+                // 占位空间，保持布局平衡
+                Spacer(modifier = Modifier.weight(1f))
+            }
+
+            // 图片预览区域（仅在选择了图片时显示）
             if (uiState.selectedImage != null) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -173,7 +411,6 @@ fun MainScreen(
                             )
                         }
                     }
-
                     Spacer(modifier = Modifier.width(12.dp))
 
                     Text(
@@ -214,7 +451,11 @@ fun MainScreen(
 
                         // 优先显示完整识别结果（百度+阿里云）
                         uiState.plantWithDetails != null -> {
-                            PlantDetailsWithStickyHeader(plantWithDetails = uiState.plantWithDetails!!)
+                            PlantDetailsWithStickyHeader(
+                                plantWithDetails = uiState.plantWithDetails!!,
+                                favoriteViewModel = favoriteViewModel,
+                                selectedImage = uiState.selectedImage
+                            )
                         }
 
                         // 显示仅百度识别结果（兼容旧版本）
@@ -229,7 +470,7 @@ fun MainScreen(
                     }
                 }
 
-                // 毛玻璃效果层 - 在内容区域底部，位于内容和按钮之间
+                // 毛玻璃效果层
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
@@ -248,507 +489,41 @@ fun MainScreen(
             }
 
             // 底部：操作按钮区域
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth(),
-//                    .padding(top = 10.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(
-                    onClick = { pickImageLauncher.launch("image/*") },
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(64.dp)
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_gallery),
-                        contentDescription = "相册",
-                        tint = Color(0xFF364858)
-                    )
-                }
-
-                Spacer(modifier = Modifier.weight(1f))
-
-                IconButton(
-                    onClick = { takePictureLauncher.launch(null) },
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(64.dp)
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_camera),
-                        contentDescription = "拍照",
-                        tint = Color(0xFF364858)
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun PlantDetailsWithStickyHeader(plantWithDetails: com.hailong.plantknow.model.PlantWithDetails) {
-    // 本地收藏状态 - 使用 remember 管理UI状态
-    var isFavorited by remember { mutableStateOf(false) }
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = Color(0xFFE9F0F8)
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(5.dp)
-        ) {
-            // 固定标题部分 - 添加收藏按钮
-            Column {
-                // 植物名称和收藏按钮行
+            if (uiState.selectedImage == null || hasRecognitionResult) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier
+                        .fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = plantWithDetails.basicInfo.plantName,
-                        color = Color(0xFF364858),
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
+                    IconButton(
+                        onClick = { pickImageLauncher.launch("image/*") },
                         modifier = Modifier
-                            .padding(bottom = 6.dp)
                             .weight(1f)
-                    )
+                            .height(64.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_gallery),
+                            contentDescription = "相册",
+                            tint = Color(0xFF364858)
+                        )
+                    }
 
-                    // 收藏按钮
-                    FavoriteButton(
-                        isFavorited = isFavorited,
-                        onFavoriteClick = {
-                            isFavorited = !isFavorited
-                            // 这里可以添加点击反馈，比如震动或Toast
-                            Log.d("Favorite", "收藏状态: $isFavorited")
-                        },
-                        modifier = Modifier.padding(bottom = 6.dp)
-                    )
-                }
+                    Spacer(modifier = Modifier.weight(1f))
 
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(bottom = 6.dp)
-                ) {
-                    Text(
-                        text = "识别置信度：",
-                        color = Color(0xFF666666),
-                        fontSize = 14.sp
-                    )
-                    Text(
-                        text = "${plantWithDetails.basicInfo.confidencePercent}%",
-                        color = Color(0xFF4CAF50),
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(start = 4.dp)
-                    )
-                }
-
-                HorizontalDivider(
-                    modifier = Modifier.padding(vertical = 8.dp),
-                    color = Color(0xFFE0E0E0)
-                )
-            }
-
-            // 可滚动内容部分 - 修改为分段显示
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState())
-            ) {
-                // 使用分段渲染函数
-                PlantDescriptionWithTitles(plantWithDetails.detailedDescription)
-
-                Text(
-                    text = "—— 信息由通义千问AI提供",
-                    color = Color(0xFF999999),
-                    fontSize = 12.sp,
-                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
-                    modifier = Modifier.padding(top = 16.dp)
-                )
-            }
-        }
-    }
-}
-
-/**
- * 收藏按钮组件
- * @param isFavorited 当前收藏状态
- * @param onFavoriteClick 点击回调
- * @param modifier 修饰符
- */
-@Composable
-private fun FavoriteButton(
-    isFavorited: Boolean,
-    onFavoriteClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val tintColor = if (isFavorited) {
-        Color(0xFFFF5252) // 红色 - 已收藏
-    } else {
-        Color(0xFF9E9E9E) // 灰色 - 未收藏
-    }
-
-    val iconRes = if (isFavorited) {
-        Icons.Filled.Favorite // 实心爱心
-    } else {
-        Icons.Outlined.FavoriteBorder // 空心爱心
-    }
-
-    Box(
-        modifier = modifier
-            .size(48.dp) // 保持合适的点击区域
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null // 关键：移除涟漪效果
-            ) {
-                onFavoriteClick()
-            },
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            imageVector = iconRes,
-            contentDescription = if (isFavorited) "取消收藏" else "收藏",
-            tint = tintColor,
-            modifier = Modifier.size(28.dp)
-        )
-    }
-}
-
-/**
- * 增强版收藏按钮 - 带动画效果
- */
-@Composable
-private fun AnimatedFavoriteButton(
-    isFavorited: Boolean,
-    onFavoriteClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val transition = updateTransition(targetState = isFavorited, label = "favoriteTransition")
-
-    val tint by transition.animateColor(label = "tint") { favoriteState ->
-        if (favoriteState) Color(0xFFFF5252) else Color(0xFF9E9E9E)
-    }
-
-    val scale by transition.animateFloat(
-        transitionSpec = {
-            tween(durationMillis = 200, easing = FastOutSlowInEasing)
-        },
-        label = "scale"
-    ) { favoriteState ->
-        if (favoriteState) 1.2f else 1f
-    }
-
-    IconButton(
-        onClick = onFavoriteClick,
-        modifier = modifier
-    ) {
-        Icon(
-            imageVector = if (isFavorited) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-            contentDescription = if (isFavorited) "取消收藏" else "收藏",
-            tint = tint,
-            modifier = Modifier
-                .size(28.dp)
-                .scale(scale)
-        )
-    }
-}
-
-/**
- * 分段渲染植物描述，标题使用大字体
- */
-@Composable
-private fun PlantDescriptionWithTitles(description: String) {
-    // 按数字标题分割内容
-    val sections = parseDescriptionIntoSections(description)
-
-    Column {
-        sections.forEach { section ->
-            when (section.type) {
-                SectionType.TITLE -> {
-                    // 标题样式 - 大字体
-                    Text(
-                        text = section.content,
-                        color = Color(0xFF364858),
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(bottom = 4.dp, top = 8.dp)
-                    )
-                }
-                SectionType.CONTENT -> {
-                    // 内容样式 - 正常字体
-                    Text(
-                        text = section.content,
-                        color = Color(0xFF666666),
-                        fontSize = 14.sp,
-                        lineHeight = 22.sp,
-                        modifier = Modifier.padding(bottom = 12.dp)
-                    )
+                    IconButton(
+                        onClick = { takePictureLauncher.launch(null) },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(64.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_camera),
+                            contentDescription = "拍照",
+                            tint = Color(0xFF364858)
+                        )
+                    }
                 }
             }
-        }
-    }
-}
-
-/**
- * 解析描述文本，分割为标题和内容
- */
-private fun parseDescriptionIntoSections(description: String): List<DescriptionSection> {
-    val sections = mutableListOf<DescriptionSection>()
-    val lines = description.split("\n")
-
-    var currentContent = StringBuilder()
-
-    lines.forEach { line ->
-        // 判断是否为标题行（以数字序号开头）
-        if (line.matches(Regex("^\\d+\\..*"))) {
-            // 如果之前有内容，先保存
-            if (currentContent.isNotEmpty()) {
-                sections.add(DescriptionSection(SectionType.CONTENT, currentContent.toString().trim()))
-                currentContent = StringBuilder()
-            }
-            // 添加标题
-            sections.add(DescriptionSection(SectionType.TITLE, line.trim()))
-        } else {
-            // 内容行
-            currentContent.append(line).append("\n")
-        }
-    }
-
-    // 添加最后的内容
-    if (currentContent.isNotEmpty()) {
-        sections.add(DescriptionSection(SectionType.CONTENT, currentContent.toString().trim()))
-    }
-
-    return sections
-}
-
-/**
- * 描述分段数据类
- */
-private data class DescriptionSection(
-    val type: SectionType,
-    val content: String
-)
-
-/**
- * 分段类型枚举
- */
-private enum class SectionType {
-    TITLE, CONTENT
-}
-
-/**
- * 基础植物信息带固定标题
- */
-@Composable
-private fun PlantBasicInfoWithStickyHeader(plant: com.hailong.plantknow.model.PlantResult) {
-    // 在函数开始处定义 descriptionText
-    val descriptionText = runCatching { plant.description }.getOrElse { "" }
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = Color(0xFFE9F0F8)
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(5.dp)
-        ) {
-            // 固定标题部分
-            Column {
-                Text(
-                    text = plant.plantName,
-                    color = Color(0xFF364858),
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 6.dp)
-                )
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(bottom = 6.dp)
-                ) {
-                    Text(
-                        text = "识别置信度：",
-                        color = Color(0xFF666666),
-                        fontSize = 14.sp
-                    )
-                    Text(
-                        text = "${plant.confidencePercent}%",
-                        color = Color(0xFF4CAF50),
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(start = 4.dp)
-                    )
-                }
-
-                // 只在有描述时显示分割线和标题
-                if (descriptionText.isNotEmpty()) {
-                    HorizontalDivider(
-                        modifier = Modifier.padding(vertical = 8.dp),
-                        color = Color(0xFFE0E0E0)
-                    )
-                    Text(
-                        text = "详细描述",
-                        color = Color(0xFF364858),
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                }
-            }
-
-            // 可滚动内容部分 - 只在有描述时显示
-            if (descriptionText.isNotEmpty()) {
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .verticalScroll(rememberScrollState())
-                ) {
-                    Text(
-                        text = descriptionText,
-                        color = Color(0xFF666666),
-                        fontSize = 14.sp,
-                        lineHeight = 22.sp
-                    )
-                }
-            }
-        }
-    }
-}
-
-/**
- * 欢迎内容
- */
-@Composable
-private fun WelcomeContent() {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState()),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        // 上半部分内容
-        Column(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(
-                text = "你好！",
-                color = Color(0xFF364858),
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Bold,
-                fontFamily = FontFamily.SansSerif,
-                modifier = Modifier.padding(top = 60.dp, bottom = 24.dp, start = 10.dp)
-            )
-
-            Text(
-                text = "欢迎使用PlantKnow",
-                color = Color(0xFF364858),
-                fontSize = 18.sp,
-                modifier = Modifier.padding(bottom = 16.dp, start = 10.dp)
-            )
-
-            Text(
-                text = "拍摄或选择一张植物照片，AI将为您识别解答。",
-                color = Color(0xFF666666),
-                fontSize = 16.sp,
-                modifier = Modifier.padding(bottom = 20.dp, start = 10.dp)
-            )
-
-            Text(
-                text = "学习与探索。",
-                color = Color(0xFF666666),
-                fontSize = 12.sp,
-                fontFamily = FontFamily.Serif,
-                modifier = Modifier.padding(bottom = 40.dp, start = 10.dp)
-            )
-        }
-
-        // 使用weight让图片在剩余空间中居中
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth(),
-            contentAlignment = Alignment.Center
-        ) {
-            Image(
-                painter = painterResource(id = R.drawable.home_flower), // 替换为您的花朵图片资源ID
-                contentDescription = "装饰花朵",
-                modifier = Modifier
-                    .size(180.dp), // 调整图片大小
-                contentScale = ContentScale.Fit
-            )
-        }
-    }
-}
-
-/**
- * 加载内容
- */
-@Composable
-private fun LoadingContent(recognitionStep: String) {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            CircularProgressIndicator(
-                color = Color(0xFF364858),
-                modifier = Modifier.size(48.dp)
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = recognitionStep,
-                color = Color(0xFF666666),
-                fontSize = 16.sp
-            )
-        }
-    }
-}
-
-/**
- * 错误信息卡片组件
- */
-@Composable
-private fun ErrorCard(message: String) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color(0xFFFFEBEE)
-        )
-    ) {
-        Column(
-            modifier = Modifier.padding(20.dp)
-        ) {
-            Text(
-                text = "识别失败",
-                color = Color(0xFFD32F2F),
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-            Text(
-                text = message,
-                color = Color(0xFF666666),
-                fontSize = 14.sp,
-                lineHeight = 22.sp
-            )
         }
     }
 }
