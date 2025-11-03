@@ -1,4 +1,4 @@
-package com.hailong.plantknow.viewModel
+package com.hailong.plantknow.viewmodel
 
 import android.graphics.Bitmap
 import android.net.Uri
@@ -12,7 +12,8 @@ import android.util.Log
 import com.hailong.plantknow.model.PlantResult
 import com.hailong.plantknow.model.PlantWithDetails
 import com.hailong.plantknow.repository.PlantRecognitionRepository
-import com.hailong.plantknow.util.Result
+import com.hailong.plantknow.utils.Result
+import kotlinx.coroutines.flow.update
 
 class PlantViewModel(private val plantRecognitionRepository: PlantRecognitionRepository) : ViewModel() {
 
@@ -214,5 +215,15 @@ class PlantViewModel(private val plantRecognitionRepository: PlantRecognitionRep
 
     fun clearError() {
         _uiState.value = _uiState.value.copy(error = null)
+    }
+
+    fun clearRecognitionResult() {
+        // 清空识别结果，回到初始状态
+        _uiState.update { it.copy(
+            plantWithDetails = null,
+            result = null,
+            error = null,
+            selectedImage = null
+        ) }
     }
 }

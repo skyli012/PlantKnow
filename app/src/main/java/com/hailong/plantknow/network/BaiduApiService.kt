@@ -1,7 +1,7 @@
 package com.hailong.plantknow.network
 
 import com.hailong.plantknow.model.RecognitionResponse
-import com.hailong.plantknow.util.Constants
+import com.hailong.plantknow.utils.Constants
 import retrofit2.http.*
 import retrofit2.Response
 

@@ -1,6 +1,6 @@
 package com.hailong.plantknow.model
 
-import com.hailong.plantknow.util.Constants
+import com.hailong.plantknow.utils.Constants
 
 /**
  * 阿里云通义千问API数据模型

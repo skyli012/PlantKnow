@@ -2,7 +2,7 @@ package com.hailong.plantknow.network
 
 import com.hailong.plantknow.model.AliyunChatRequest
 import com.hailong.plantknow.model.AliyunChatResponse
-import com.hailong.plantknow.util.Constants
+import com.hailong.plantknow.utils.Constants
 import okhttp3.ResponseBody
 import retrofit2.http.Body
 import retrofit2.http.Headers

@@ -3,11 +3,10 @@ package com.hailong.plantknow.network
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
-import com.hailong.plantknow.util.Constants
+import com.hailong.plantknow.utils.Constants
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.IOException
-import kotlin.times
 
 /**
  * 认证帮助类

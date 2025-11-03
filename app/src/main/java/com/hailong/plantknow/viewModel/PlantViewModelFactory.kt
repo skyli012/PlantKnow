@@ -1,4 +1,4 @@
-package com.hailong.plantknow.viewModel
+package com.hailong.plantknow.viewmodel
 
 import android.content.Context
 import androidx.lifecycle.ViewModel

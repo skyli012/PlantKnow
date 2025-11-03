@@ -1,6 +1,6 @@
 package com.hailong.plantknow.network
 
-import com.hailong.plantknow.util.Constants
+import com.hailong.plantknow.utils.Constants
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
