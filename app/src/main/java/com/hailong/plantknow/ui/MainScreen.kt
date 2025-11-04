@@ -171,12 +171,12 @@ fun MainScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .pointerInput(hasRecognitionResult.value) { // 添加依赖，当识别结果状态变化时重新创建
+                .pointerInput(uiState.isLoading, hasRecognitionResult.value) { // 添加依赖，当识别结果状态变化时重新创建
                     detectHorizontalDragGestures(
                         onDragEnd = {
                             coroutineScope.launch {
                                 // 只有在没有识别结果时才允许切换到收藏页面
-                                if (slideOffset.value > maxSlideOffset * 0.6f && !showFavorites && !hasRecognitionResult.value) {
+                                if (slideOffset.value > maxSlideOffset * 0.6f && !showFavorites && !hasRecognitionResult.value && !uiState.isLoading) {
                                     // 滑动超过60%，切换到收藏页面
                                     slideOffset.animateTo(maxSlideOffset, animationSpec = tween(300))
                                     showFavorites = true
@@ -196,7 +196,7 @@ fun MainScreen(
                         }
                     ) { change, dragAmount ->
                         // 在有识别结果时禁用向右滑动
-                        if (hasRecognitionResult.value && dragAmount > 0) {
+                        if ((hasRecognitionResult.value || uiState.isLoading) && dragAmount > 0) {
                             // 有识别结果且向右滑动，不处理
                             return@detectHorizontalDragGestures
                         }

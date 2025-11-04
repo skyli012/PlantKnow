@@ -24,7 +24,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import com.hailong.plantknow.network.AuthHelper
 import com.hailong.plantknow.ui.MainScreen
 import com.hailong.plantknow.ui.screen.SplashScreen  // 导入您的SplashScreen
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -78,7 +77,9 @@ fun AppContent() {
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize().background(backgroundColor)) {
+    Box(modifier = Modifier
+        .fillMaxSize()
+        .background(backgroundColor)) {
 
         // ✅ 关键：提前组合 MainScreen，但先隐藏
         if (isMainScreenReady) {
@@ -93,12 +94,16 @@ fun AppContent() {
             }
         } else {
             // 可选：显示一个极简的占位 UI（如 Logo + 背景），避免白屏
-            Box(modifier = Modifier.fillMaxSize().background(backgroundColor))
+            Box(modifier = Modifier
+                .fillMaxSize()
+                .background(backgroundColor))
         }
 
         // 开屏界面
         Box(
-            modifier = Modifier.fillMaxSize().alpha(splashAlpha.value)
+            modifier = Modifier
+                .fillMaxSize()
+                .alpha(splashAlpha.value)
         ) {
             if (showSplash) {
                 SplashScreen(onAnimationComplete = { showSplash = false })
