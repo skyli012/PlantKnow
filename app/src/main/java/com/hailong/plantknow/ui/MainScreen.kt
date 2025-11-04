@@ -43,6 +43,8 @@ import com.hailong.plantknow.viewmodel.FavoriteViewModel
 import com.hailong.plantknow.viewmodel.FavoriteViewModelFactory
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import com.hailong.plantknow.ui.component.ErrorCard
 import com.hailong.plantknow.ui.component.LoadingContent
 import com.hailong.plantknow.ui.component.PlantBasicInfoWithStickyHeader
@@ -97,9 +99,13 @@ fun MainScreen(
     var showFavorites by remember { mutableStateOf(false) }
     var selectedFavorite by remember { mutableStateOf<com.hailong.plantknow.model.FavoritePlant?>(null) }
 
+
     // 滑动相关状态
     val slideOffset = remember { Animatable(0f) }
-    val maxSlideOffset = 1000f // 最大滑动距离
+    // 获取屏幕宽度
+    val screenWidth = LocalConfiguration.current.screenWidthDp.dp
+    val maxSlideOffsetPx = with(LocalDensity.current) { screenWidth.toPx() }
+    val maxSlideOffset = maxSlideOffsetPx // 最大滑动距离
     val coroutineScope = rememberCoroutineScope()
 
     // 计算进度 (0f - 1f)
@@ -221,7 +227,6 @@ fun MainScreen(
                     .graphicsLayer {
                         // 优化：收藏页面从左侧滑入，实时跟随手指移动
                         translationX = -maxSlideOffset + slideOffset.value
-                        alpha = progress
                     }
             ) {
                 // 优化：只要进度大于0就显示收藏页面，确保滑动时能实时看到
@@ -252,14 +257,10 @@ fun MainScreen(
                     .fillMaxSize()
                     .graphicsLayer {
                         // 优化：主页面实时跟随手指移动
-                        translationX = slideOffset.value * 0.3f
-                        alpha = 1f - progress
-                        scaleX = 1f - progress * 0.1f
-                        scaleY = 1f - progress * 0.1f
+                        translationX = slideOffset.value
                     }
             ) {
                 // 优化：只要进度小于0.99就显示主页面，确保滑动时能实时看到
-                if (progress < 0.99f) {
                     MainContent(
                         uiState = uiState,
                         favoriteViewModel = favoriteViewModel,
@@ -274,7 +275,6 @@ fun MainScreen(
                             }
                         }
                     )
-                }
             }
 
             // 滑动提示 - 只在主页面显示且没有识别结果时显示
