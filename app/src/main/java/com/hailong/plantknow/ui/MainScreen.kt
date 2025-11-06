@@ -39,9 +39,11 @@ import com.hailong.plantknow.database.FavoritePlantDatabase
 import com.hailong.plantknow.repository.FavoriteRepository
 import com.hailong.plantknow.ui.screen.FavoriteListScreen
 import com.hailong.plantknow.ui.screen.FavoriteDetailScreen
+import com.hailong.plantknow.ui.component.PermissionDialog
+import com.hailong.plantknow.ui.component.PermissionExplanationDialog
+import com.hailong.plantknow.utils.PermissionChecker
 import com.hailong.plantknow.viewmodel.FavoriteViewModel
 import com.hailong.plantknow.viewmodel.FavoriteViewModelFactory
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
@@ -99,6 +101,12 @@ fun MainScreen(
     var showFavorites by remember { mutableStateOf(false) }
     var selectedFavorite by remember { mutableStateOf<com.hailong.plantknow.model.FavoritePlant?>(null) }
 
+    // 权限相关状态
+    var showCameraPermissionDialog by remember { mutableStateOf(false) }
+    var showPermissionExplanation by remember { mutableStateOf(false) }
+
+    // 权限检查器
+    val permissionChecker = remember { PermissionChecker(context) }
 
     // 滑动相关状态
     val slideOffset = remember { Animatable(0f) }
@@ -162,6 +170,21 @@ fun MainScreen(
             viewModel.takePhoto(it)
             viewModel.recognizePlantWithDetails() // 改为使用完整识别流程
         }
+    }
+
+    // 权限请求启动器
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            // 权限已授予，执行拍照
+            takePictureLauncher.launch(null)
+        } else {
+            // 权限被拒绝，显示解释对话框
+            showPermissionExplanation = true
+        }
+        // 关闭权限请求对话框
+        showCameraPermissionDialog = false
     }
 
     // 使用Scaffold布局（移除topBar参数）
@@ -261,20 +284,29 @@ fun MainScreen(
                     }
             ) {
                 // 优化：只要进度小于0.99就显示主页面，确保滑动时能实时看到
-                    MainContent(
-                        uiState = uiState,
-                        favoriteViewModel = favoriteViewModel,
-                        pickImageLauncher = pickImageLauncher,
-                        takePictureLauncher = takePictureLauncher,
-                        hasRecognitionResult = hasRecognitionResult.value,
-                        paddingValues = paddingValues,
-                        onUserIconClick = {
-                            coroutineScope.launch {
-                                slideOffset.animateTo(maxSlideOffset, animationSpec = tween(300))
-                                showFavorites = true
-                            }
+                MainContent(
+                    uiState = uiState,
+                    favoriteViewModel = favoriteViewModel,
+                    pickImageLauncher = pickImageLauncher,
+                    onTakePictureClick = {
+                        // 处理拍照按钮点击
+                        if (permissionChecker.hasCameraPermission()) {
+                            // 已有权限，直接拍照
+                            takePictureLauncher.launch(null)
+                        } else {
+                            // 没有权限，显示权限请求对话框
+                            showCameraPermissionDialog = true
                         }
-                    )
+                    },
+                    hasRecognitionResult = hasRecognitionResult.value,
+                    paddingValues = paddingValues,
+                    onUserIconClick = {
+                        coroutineScope.launch {
+                            slideOffset.animateTo(maxSlideOffset, animationSpec = tween(300))
+                            showFavorites = true
+                        }
+                    }
+                )
             }
 
             // 滑动提示 - 只在主页面显示且没有识别结果时显示
@@ -324,14 +356,50 @@ fun MainScreen(
             }
         }
     }
+
+    // 权限请求对话框
+    if (showCameraPermissionDialog) {
+        PermissionDialog(
+            permissionType = "相机",
+            onAllowClick = {
+                // 请求相机权限
+                permissionLauncher.launch(android.Manifest.permission.CAMERA)
+            },
+            onDenyClick = {
+                showCameraPermissionDialog = false
+                // 可以在这里记录用户拒绝权限
+            },
+            onDismissRequest = {
+                showCameraPermissionDialog = false
+            }
+        )
+    }
+
+    // 权限解释对话框
+    if (showPermissionExplanation) {
+        PermissionExplanationDialog(
+            permissionType = "相机",
+            onGoToSettings = {
+                // 跳转到应用设置页面
+                permissionChecker.openAppSettings()
+                showPermissionExplanation = false
+            },
+            onCancel = {
+                showPermissionExplanation = false
+            },
+            onDismissRequest = {
+                showPermissionExplanation = false
+            }
+        )
+    }
 }
 
 @Composable
 private fun MainContent(
-    uiState: com.hailong.plantknow.viewmodel.PlantViewModel.PlantRecognitionState,
+    uiState: PlantViewModel.PlantRecognitionState,
     favoriteViewModel: FavoriteViewModel,
     pickImageLauncher: androidx.activity.compose.ManagedActivityResultLauncher<String, Uri?>,
-    takePictureLauncher: androidx.activity.compose.ManagedActivityResultLauncher<Void?, Bitmap?>,
+    onTakePictureClick: () -> Unit,
     hasRecognitionResult: Boolean,
     paddingValues: PaddingValues,
     onUserIconClick: () -> Unit
@@ -511,7 +579,7 @@ private fun MainContent(
                     Spacer(modifier = Modifier.weight(1f))
 
                     IconButton(
-                        onClick = { takePictureLauncher.launch(null) },
+                        onClick = onTakePictureClick,
                         modifier = Modifier
                             .weight(1f)
                             .height(64.dp)
