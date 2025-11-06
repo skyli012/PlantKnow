@@ -2,6 +2,7 @@ package com.hailong.plantknow.ui.component
 
 import android.net.Uri
 import android.graphics.Bitmap
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -25,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hailong.plantknow.model.confidencePercent
 import com.hailong.plantknow.viewmodel.FavoriteViewModel
+import kotlin.math.log
 
 @Composable
 fun PlantDetailsWithStickyHeader(
@@ -171,24 +173,31 @@ fun PlantDescriptionWithTitles(description: String) {
 private fun parseDescriptionIntoSections(description: String): List<DescriptionSection> {
     val sections = mutableListOf<DescriptionSection>()
     val lines = description.split("\n")
+    Log.d("PlantParser", "Input: $description")
 
     var currentContent = StringBuilder()
 
     lines.forEach { line ->
-        // 判断是否为标题行（以数字序号开头）
-        if (line.matches(Regex("^\\d+\\..*"))) {
+        val match = Regex("^(.+?)[:：]\\s*(.*)").find(line)
+        if (match != null) {
             // 如果之前有内容，先保存
             if (currentContent.isNotEmpty()) {
-                sections.add(DescriptionSection(SectionType.CONTENT, currentContent.toString().trim()))
+                sections.add(
+                    DescriptionSection(SectionType.CONTENT, currentContent.toString().trim())
+                )
                 currentContent = StringBuilder()
             }
-            // 添加标题
-            sections.add(DescriptionSection(SectionType.TITLE, line.trim()))
+            // 添加标题和内容
+            val title = match.groupValues[1].trim()
+            val content = match.groupValues[2].trim()
+            sections.add(DescriptionSection(SectionType.TITLE, title))
+            sections.add(DescriptionSection(SectionType.CONTENT, content))
         } else {
-            // 内容行
-            currentContent.append(line).append("\n")
+            // 普通内容行
+            currentContent.append(line)
         }
     }
+
 
     // 添加最后的内容
     if (currentContent.isNotEmpty()) {
