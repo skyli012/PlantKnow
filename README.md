@@ -6,7 +6,7 @@
 
 </div>
 <div align="center">
-  <img src="docs/icons/ic_launcher_foreground.webp" alt="PlantKnow App Icon" width="120" />
+  <img src="docs/icons/ic_launcher.webp" alt="PlantKnow App Icon" width="120" />
 </div>
 
 > 一款基于 **百度AI开放平台** 的智能植物识别 App，使用 **Kotlin + Jetpack Compose + MVVM** 架构打造，支持拍照识别、相册选取、云端识别与百科展示，全流程流畅高效。
