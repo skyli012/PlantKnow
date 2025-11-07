@@ -1,5 +1,6 @@
 package com.hailong.plantknow.ui.screen
 
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -119,15 +120,16 @@ private fun parsePlantDescription(description: String): List<DescriptionSection>
     for (paragraph in paragraphs) {
         // 检查是否是标题段落（以白名单中的标题开头）
         val matchedTitle = allowedTitles.firstOrNull { title ->
-            paragraph.startsWith("$title：")
+            paragraph.startsWith("$title:") // 植物详细页面小标题和内容划分   英文冒号
         }
+        Log.d("PlantParser", "Input: $paragraph")
 
         if (matchedTitle != null) {
             // 保存前一个section
             currentSection?.let { sections.add(it) }
 
             // 创建新的section
-            val content = paragraph.substringAfter("：").trim()
+            val content = paragraph.substringAfter(":").trim()  // 植物详细页面小标题和内容划分    英文冒号
             currentSection = DescriptionSection(matchedTitle, content)
         } else {
             // 如果不是标题段落
