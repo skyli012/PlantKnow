@@ -187,28 +187,46 @@ fun MainScreen(
         showCameraPermissionDialog = false
     }
 
-    // 使用Scaffold布局（移除topBar参数）
+    // 使用Scaffold布局作为根容器
     Scaffold(
-        containerColor = Color(0xFFE9F0F8)
+        containerColor = Color(0xFFE9F0F8) // 设置背景色为浅蓝色
     ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .pointerInput(uiState.isLoading, hasRecognitionResult.value) { // 添加依赖，当识别结果状态变化时重新创建
+                .pointerInput(uiState.isLoading, hasRecognitionResult.value, selectedFavorite) {
+                    // 添加依赖：当加载状态、识别结果或收藏详情状态变化时重新创建手势检测
                     detectHorizontalDragGestures(
                         onDragEnd = {
                             coroutineScope.launch {
-                                // 只有在没有识别结果时才允许切换到收藏页面
-                                if (slideOffset.value > maxSlideOffset * 0.6f && !showFavorites && !hasRecognitionResult.value && !uiState.isLoading) {
-                                    // 滑动超过60%，切换到收藏页面
+                                // ========== 滑动结束处理逻辑 ==========
+
+                                // 保护条件：在收藏详情页面完全禁用滑动结束处理
+                                // 防止用户从收藏详情页面滑动到主页面
+                                if (selectedFavorite != null) {
+                                    return@launch
+                                }
+
+                                // 条件1：从主页面切换到收藏页面
+                                // 要求：滑动超过60% + 当前不在收藏页面 + 没有识别结果 + 不在加载状态
+                                if (slideOffset.value > maxSlideOffset * 0.6f &&
+                                    !showFavorites &&
+                                    !hasRecognitionResult.value &&
+                                    !uiState.isLoading) {
+                                    // 执行切换到收藏页面的动画
                                     slideOffset.animateTo(maxSlideOffset, animationSpec = tween(300))
                                     showFavorites = true
-                                } else if (slideOffset.value < maxSlideOffset * 0.4f && showFavorites) {
-                                    // 滑动不足40%，回到主页面
+                                }
+                                // 条件2：从收藏页面切换回主页面
+                                // 要求：滑动不足40% + 当前在收藏页面
+                                else if (slideOffset.value < maxSlideOffset * 0.4f && showFavorites) {
+                                    // 执行切换回主页面的动画
                                     slideOffset.animateTo(0f, animationSpec = tween(300))
                                     showFavorites = false
-                                } else {
-                                    // 保持当前状态
+                                }
+                                // 条件3：保持当前状态（滑动距离在40%-60%之间）
+                                else {
+                                    // 根据当前页面状态弹回对应的位置
                                     if (showFavorites) {
                                         slideOffset.animateTo(maxSlideOffset, animationSpec = tween(300))
                                     } else {
@@ -218,72 +236,101 @@ fun MainScreen(
                             }
                         }
                     ) { change, dragAmount ->
-                        // 在有识别结果时禁用向右滑动
-                        if ((hasRecognitionResult.value || uiState.isLoading) && dragAmount > 0) {
-                            // 有识别结果且向右滑动，不处理
+                        // ========== 滑动过程实时处理逻辑 ==========
+
+                        // 保护条件1：在收藏详情页面完全禁用所有滑动
+                        // 这是防止从详情页面滑动到主页面的关键保护
+                        if (selectedFavorite != null) {
                             return@detectHorizontalDragGestures
                         }
 
-                        // 优化：实时更新showFavorites状态，让主界面能实时显示
-                        val newOffset = when {
-                            !showFavorites -> (slideOffset.value + dragAmount).coerceIn(0f, maxSlideOffset)
-                            else -> (slideOffset.value + dragAmount).coerceIn(0f, maxSlideOffset)
+                        // 保护条件2：在有识别结果或加载中时禁用向右滑动
+                        // 防止用户在有重要内容时意外切换到收藏页面
+                        if ((hasRecognitionResult.value || uiState.isLoading) && dragAmount > 0) {
+                            return@detectHorizontalDragGestures
                         }
 
+                        // 计算新的滑动偏移量，限制在有效范围内 [0f, maxSlideOffset]
+                        val newOffset = (slideOffset.value + dragAmount).coerceIn(0f, maxSlideOffset)
+
                         coroutineScope.launch {
+                            // 立即更新滑动位置（无动画），实现手指实时跟随效果
                             slideOffset.snapTo(newOffset)
 
-                            // 实时更新页面状态，让界面能及时响应
-                            if (newOffset > maxSlideOffset * 0.5f && !showFavorites) {
-                                showFavorites = true
-                            } else if (newOffset < maxSlideOffset * 0.5f && showFavorites) {
-                                showFavorites = false
+                            // 实时更新页面状态，让界面能及时响应滑动
+                            // 保护条件：只在非详情页面更新状态
+                            if (selectedFavorite == null) {
+                                // 使用50%阈值实时切换页面状态：
+                                // - 超过50%：切换到收藏页面
+                                // - 小于50%：切换回主页面
+                                if (newOffset > maxSlideOffset * 0.5f && !showFavorites) {
+                                    showFavorites = true
+                                } else if (newOffset < maxSlideOffset * 0.5f && showFavorites) {
+                                    showFavorites = false
+                                }
                             }
                         }
                     }
                 }
         ) {
-            // 收藏页面 - 从左侧进入
+            // ========== 页面渲染部分 ==========
+
+            // 收藏页面容器 - 从左侧滑入
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .graphicsLayer {
-                        // 优化：收藏页面从左侧滑入，实时跟随手指移动
+                        // 收藏页面动画效果：
+                        // 初始位置：-maxSlideOffset（完全在左侧屏幕外）
+                        // 结束位置：0（完全显示在屏幕上）
                         translationX = -maxSlideOffset + slideOffset.value
                     }
             ) {
-                // 优化：只要进度大于0就显示收藏页面，确保滑动时能实时看到
+                // 优化：只要滑动进度大于1%就显示收藏页面，确保滑动时能实时看到
+                // 避免页面闪烁，提供流畅的视觉反馈
                 if (progress > 0.01f) {
+                    // 根据是否选中具体收藏项显示不同页面
                     if (selectedFavorite != null) {
+                        // 收藏详情页面 - 显示单个植物的详细信息
                         FavoriteDetailScreen(
                             favoritePlant = selectedFavorite!!,
-                            onBackClick = { selectedFavorite = null }
+                            onBackClick = {
+                                // 返回按钮点击：清空选中的收藏项，返回收藏列表
+                                selectedFavorite = null
+                            }
                         )
                     } else {
+                        // 收藏列表页面 - 显示所有收藏的植物
                         FavoriteListScreen(
                             favoriteViewModel = favoriteViewModel,
                             onBackClick = {
+                                // 返回按钮点击：动画滑动回主页面
                                 coroutineScope.launch {
                                     slideOffset.animateTo(0f, animationSpec = tween(300))
                                     showFavorites = false
                                 }
                             },
-                            onItemClick = { favorite -> selectedFavorite = favorite }
+                            onItemClick = { favorite ->
+                                // 收藏项点击：设置选中的收藏项，进入详情页面
+                                selectedFavorite = favorite
+                            }
                         )
                     }
                 }
             }
 
-            // 主页面 - 向右移动并逐渐消失
+            // 主页面容器 - 向右移动并逐渐消失
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .graphicsLayer {
-                        // 优化：主页面实时跟随手指移动
+                        // 主页面动画效果：
+                        // 初始位置：0（完全显示在屏幕上）
+                        // 结束位置：maxSlideOffset（完全在右侧屏幕外）
                         translationX = slideOffset.value
                     }
             ) {
-                // 优化：只要进度小于0.99就显示主页面，确保滑动时能实时看到
+                // 主页面内容 - 植物识别功能
                 MainContent(
                     uiState = uiState,
                     favoriteViewModel = favoriteViewModel,
@@ -301,58 +348,13 @@ fun MainScreen(
                     hasRecognitionResult = hasRecognitionResult.value,
                     paddingValues = paddingValues,
                     onUserIconClick = {
+                        // 用户图标点击：动画滑动到收藏页面
                         coroutineScope.launch {
                             slideOffset.animateTo(maxSlideOffset, animationSpec = tween(300))
                             showFavorites = true
                         }
                     }
                 )
-            }
-
-            // 滑动提示 - 只在主页面显示且没有识别结果时显示
-            if (progress > 0.1f && progress < 0.9f && !showFavorites && !hasRecognitionResult.value) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .alpha(progress * 0.7f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = if (progress > 0.5f) "" else "",
-                        color = Color(0xFF364858),
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium,
-                        modifier = Modifier
-                            .background(
-                                color = Color(0xFFE9F0F8).copy(alpha = 0.8f),
-                                shape = RoundedCornerShape(16.dp)
-                            )
-                            .padding(16.dp)
-                    )
-                }
-            }
-
-            // 从收藏页面返回的滑动提示
-            if (progress > 0.1f && progress < 0.9f && showFavorites) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .alpha((1f - progress) * 0.7f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = if (progress < 0.5f) "" else "",
-                        color = Color(0xFF364858),
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium,
-                        modifier = Modifier
-                            .background(
-                                color = Color(0xFFE9F0F8).copy(alpha = 0.8f),
-                                shape = RoundedCornerShape(16.dp)
-                            )
-                            .padding(16.dp)
-                    )
-                }
             }
         }
     }
