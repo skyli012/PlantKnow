@@ -37,22 +37,21 @@ import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import com.hailong.plantknow.R
 import com.hailong.plantknow.database.FavoritePlantDatabase
 import com.hailong.plantknow.repository.FavoriteRepository
-import com.hailong.plantknow.ui.screen.FavoriteListScreen
-import com.hailong.plantknow.ui.screen.FavoriteDetailScreen
-import com.hailong.plantknow.ui.component.PermissionDialog
-import com.hailong.plantknow.ui.component.PermissionExplanationDialog
-import com.hailong.plantknow.utils.PermissionChecker
-import com.hailong.plantknow.viewmodel.FavoriteViewModel
-import com.hailong.plantknow.viewmodel.FavoriteViewModelFactory
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import com.hailong.plantknow.ui.component.ErrorCard
 import com.hailong.plantknow.ui.component.LoadingContent
+import com.hailong.plantknow.ui.component.PermissionDialog
+import com.hailong.plantknow.ui.component.PermissionExplanationDialog
 import com.hailong.plantknow.ui.component.PlantBasicInfoWithStickyHeader
 import com.hailong.plantknow.ui.component.PlantDetailsWithStickyHeader
 import com.hailong.plantknow.ui.component.WelcomeContent
+import com.hailong.plantknow.ui.screen.ProfileScreen
 import com.hailong.plantknow.utils.ImageSaver
+import com.hailong.plantknow.utils.PermissionChecker
+import com.hailong.plantknow.viewmodel.FavoriteViewModel
+import com.hailong.plantknow.viewmodel.FavoriteViewModelFactory
 import com.hailong.plantknow.viewmodel.PlantViewModel
 import com.hailong.plantknow.viewmodel.PlantViewModelFactory
 import kotlinx.coroutines.launch
@@ -86,8 +85,8 @@ fun MainScreen(
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
 
+    // 添加必要的依赖
     val imageSaver = remember { ImageSaver(context) }
-
     val favoriteViewModel: FavoriteViewModel = viewModel(
         factory = FavoriteViewModelFactory(
             FavoriteRepository(
@@ -98,8 +97,7 @@ fun MainScreen(
     )
 
     // 页面状态
-    var showFavorites by remember { mutableStateOf(false) }
-    var selectedFavorite by remember { mutableStateOf<com.hailong.plantknow.model.FavoritePlant?>(null) }
+    var showProfile by remember { mutableStateOf(false) } // 个人主页显示状态
 
     // 权限相关状态
     var showCameraPermissionDialog by remember { mutableStateOf(false) }
@@ -126,16 +124,14 @@ fun MainScreen(
         }
     }
 
-    // 处理返回键
-    BackHandler(enabled = showFavorites || hasRecognitionResult.value) {
+    // 处理返回键 - 简化处理逻辑
+    BackHandler(enabled = showProfile || hasRecognitionResult.value) {
         when {
-            selectedFavorite != null -> {
-                selectedFavorite = null
-            }
-            showFavorites -> {
+            showProfile -> {
+                // 如果正在显示个人主页，先滑动回主页再关闭
                 coroutineScope.launch {
                     slideOffset.animateTo(0f, animationSpec = tween(300))
-                    showFavorites = false
+                    showProfile = false
                 }
             }
             hasRecognitionResult.value -> {
@@ -194,40 +190,34 @@ fun MainScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .pointerInput(uiState.isLoading, hasRecognitionResult.value, selectedFavorite) {
-                    // 添加依赖：当加载状态、识别结果或收藏详情状态变化时重新创建手势检测
+                .pointerInput(uiState.isLoading, hasRecognitionResult.value, showProfile) {
+                    // 添加依赖：当加载状态、识别结果或个人主页状态变化时重新创建手势检测
                     detectHorizontalDragGestures(
                         onDragEnd = {
                             coroutineScope.launch {
                                 // ========== 滑动结束处理逻辑 ==========
 
-                                // 保护条件：在收藏详情页面完全禁用滑动结束处理
-                                // 防止用户从收藏详情页面滑动到主页面
-                                if (selectedFavorite != null) {
-                                    return@launch
-                                }
-
-                                // 条件1：从主页面切换到收藏页面
-                                // 要求：滑动超过60% + 当前不在收藏页面 + 没有识别结果 + 不在加载状态
+                                // 条件1：从主页面切换到个人主页（向右滑动）
+                                // 要求：滑动超过60% + 当前不在个人主页 + 没有识别结果 + 不在加载状态
                                 if (slideOffset.value > maxSlideOffset * 0.6f &&
-                                    !showFavorites &&
+                                    !showProfile &&
                                     !hasRecognitionResult.value &&
                                     !uiState.isLoading) {
-                                    // 执行切换到收藏页面的动画
+                                    // 执行切换到个人主页的动画
                                     slideOffset.animateTo(maxSlideOffset, animationSpec = tween(300))
-                                    showFavorites = true
+                                    showProfile = true
                                 }
-                                // 条件2：从收藏页面切换回主页面
-                                // 要求：滑动不足40% + 当前在收藏页面
-                                else if (slideOffset.value < maxSlideOffset * 0.4f && showFavorites) {
+                                // 条件2：从个人主页切换回主页面（向左滑动）
+                                // 要求：滑动不足40% + 当前在个人主页
+                                else if (slideOffset.value < maxSlideOffset * 0.4f && showProfile) {
                                     // 执行切换回主页面的动画
                                     slideOffset.animateTo(0f, animationSpec = tween(300))
-                                    showFavorites = false
+                                    showProfile = false
                                 }
                                 // 条件3：保持当前状态（滑动距离在40%-60%之间）
                                 else {
                                     // 根据当前页面状态弹回对应的位置
-                                    if (showFavorites) {
+                                    if (showProfile) {
                                         slideOffset.animateTo(maxSlideOffset, animationSpec = tween(300))
                                     } else {
                                         slideOffset.animateTo(0f, animationSpec = tween(300))
@@ -238,15 +228,8 @@ fun MainScreen(
                     ) { change, dragAmount ->
                         // ========== 滑动过程实时处理逻辑 ==========
 
-                        // 保护条件1：在收藏详情页面完全禁用所有滑动
-                        // 这是防止从详情页面滑动到主页面的关键保护
-                        if (selectedFavorite != null) {
-                            return@detectHorizontalDragGestures
-                        }
-
-                        // 保护条件2：在有识别结果或加载中时禁用向右滑动
-                        // 防止用户在有重要内容时意外切换到收藏页面
-                        if ((hasRecognitionResult.value || uiState.isLoading) && dragAmount > 0) {
+                        // 保护条件：在有识别结果或加载中时禁用所有滑动
+                        if (hasRecognitionResult.value || uiState.isLoading) {
                             return@detectHorizontalDragGestures
                         }
 
@@ -256,66 +239,44 @@ fun MainScreen(
                         coroutineScope.launch {
                             // 立即更新滑动位置（无动画），实现手指实时跟随效果
                             slideOffset.snapTo(newOffset)
-
-                            // 实时更新页面状态，让界面能及时响应滑动
-                            // 保护条件：只在非详情页面更新状态
-                            if (selectedFavorite == null) {
-                                // 使用50%阈值实时切换页面状态：
-                                // - 超过50%：切换到收藏页面
-                                // - 小于50%：切换回主页面
-                                if (newOffset > maxSlideOffset * 0.5f && !showFavorites) {
-                                    showFavorites = true
-                                } else if (newOffset < maxSlideOffset * 0.5f && showFavorites) {
-                                    showFavorites = false
-                                }
-                            }
                         }
                     }
                 }
         ) {
             // ========== 页面渲染部分 ==========
 
-            // 收藏页面容器 - 从左侧滑入
+            // 个人主页容器 - 从左侧滑入
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .graphicsLayer {
-                        // 收藏页面动画效果：
+                        // 个人主页动画效果：
                         // 初始位置：-maxSlideOffset（完全在左侧屏幕外）
                         // 结束位置：0（完全显示在屏幕上）
                         translationX = -maxSlideOffset + slideOffset.value
                     }
             ) {
-                // 优化：只要滑动进度大于1%就显示收藏页面，确保滑动时能实时看到
+                // 优化：只要滑动进度大于1%就显示个人主页，确保滑动时能实时看到
                 // 避免页面闪烁，提供流畅的视觉反馈
                 if (progress > 0.01f) {
-                    // 根据是否选中具体收藏项显示不同页面
-                    if (selectedFavorite != null) {
-                        // 收藏详情页面 - 显示单个植物的详细信息
-                        FavoriteDetailScreen(
-                            favoritePlant = selectedFavorite!!,
-                            onBackClick = {
-                                // 返回按钮点击：清空选中的收藏项，返回收藏列表
-                                selectedFavorite = null
+                    // 个人主页 - 显示用户信息和功能入口
+                    ProfileScreen(
+                        onBackClick = {
+                            // 返回按钮点击：动画滑动回主页面
+                            coroutineScope.launch {
+                                slideOffset.animateTo(0f, animationSpec = tween(300))
+                                showProfile = false
                             }
-                        )
-                    } else {
-                        // 收藏列表页面 - 显示所有收藏的植物
-                        FavoriteListScreen(
-                            favoriteViewModel = favoriteViewModel,
-                            onBackClick = {
-                                // 返回按钮点击：动画滑动回主页面
-                                coroutineScope.launch {
-                                    slideOffset.animateTo(0f, animationSpec = tween(300))
-                                    showFavorites = false
-                                }
-                            },
-                            onItemClick = { favorite ->
-                                // 收藏项点击：设置选中的收藏项，进入详情页面
-                                selectedFavorite = favorite
+                        },
+                        onFavoritesClick = {
+                            // 收藏按钮点击：这里可以添加收藏功能入口
+                            // 暂时先关闭个人主页
+                            coroutineScope.launch {
+                                slideOffset.animateTo(0f, animationSpec = tween(300))
+                                showProfile = false
                             }
-                        )
-                    }
+                        }
+                    )
                 }
             }
 
@@ -348,14 +309,37 @@ fun MainScreen(
                     hasRecognitionResult = hasRecognitionResult.value,
                     paddingValues = paddingValues,
                     onUserIconClick = {
-                        // 用户图标点击：动画滑动到收藏页面
+                        // 用户图标点击：显示个人主页并执行滑动动画
                         coroutineScope.launch {
                             slideOffset.animateTo(maxSlideOffset, animationSpec = tween(300))
-                            showFavorites = true
+                            showProfile = true
                         }
                     }
                 )
             }
+
+            // 修复：添加边缘检测区域，让左侧边缘滑动更容易触发
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .width(20.dp)
+                    .pointerInput(Unit) {
+                        detectHorizontalDragGestures { change, dragAmount ->
+                            // 只在左侧边缘且向右滑动时触发
+                            if (dragAmount > 0 && !showProfile && !hasRecognitionResult.value && !uiState.isLoading) {
+                                coroutineScope.launch {
+                                    val newOffset = (slideOffset.value + dragAmount).coerceIn(0f, maxSlideOffset)
+                                    slideOffset.snapTo(newOffset)
+
+                                    if (newOffset > maxSlideOffset * 0.3f) {
+                                        slideOffset.animateTo(maxSlideOffset, animationSpec = tween(300))
+                                        showProfile = true
+                                    }
+                                }
+                            }
+                        }
+                    }
+            )
         }
     }
 
@@ -437,7 +421,7 @@ private fun MainContent(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Person,
-                            contentDescription = "查看收藏",
+                            contentDescription = "个人主页",
                             tint = Color(0xFF364858),
                             modifier = Modifier.size(24.dp)
                         )
