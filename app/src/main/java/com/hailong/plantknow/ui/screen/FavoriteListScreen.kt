@@ -21,7 +21,7 @@ import com.hailong.plantknow.viewmodel.FavoriteViewModel
 fun FavoriteListScreen(
     favoriteViewModel: FavoriteViewModel,
     onBackClick: () -> Unit,
-    onItemClick: (FavoritePlant) -> Unit
+    onItemClick: (FavoritePlant) -> Unit  // 这个回调用于进入详情页
 ) {
     val favoritePlants by favoriteViewModel.favoritePlants.collectAsState(initial = emptyList())
 
@@ -58,7 +58,7 @@ fun FavoriteListScreen(
                 items(favoritePlants) { favorite ->
                     FavoriteListItem(
                         favorite = favorite,
-                        onClick = { onItemClick(favorite) },
+                        onClick = { onItemClick(favorite) },  // 点击进入详情
                         onRemoveClick = {
                             favoriteViewModel.removeFavorite(favorite.plantName)
                         },

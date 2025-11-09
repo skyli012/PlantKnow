@@ -17,7 +17,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
@@ -26,7 +25,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -40,6 +38,7 @@ import com.hailong.plantknow.repository.FavoriteRepository
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import com.hailong.plantknow.model.FavoritePlant
 import com.hailong.plantknow.ui.component.ErrorCard
 import com.hailong.plantknow.ui.component.LoadingContent
 import com.hailong.plantknow.ui.component.PermissionDialog
@@ -47,6 +46,8 @@ import com.hailong.plantknow.ui.component.PermissionExplanationDialog
 import com.hailong.plantknow.ui.component.PlantBasicInfoWithStickyHeader
 import com.hailong.plantknow.ui.component.PlantDetailsWithStickyHeader
 import com.hailong.plantknow.ui.component.WelcomeContent
+import com.hailong.plantknow.ui.screen.FavoriteDetailScreen
+import com.hailong.plantknow.ui.screen.FavoriteListScreen
 import com.hailong.plantknow.ui.screen.ProfileScreen
 import com.hailong.plantknow.utils.ImageSaver
 import com.hailong.plantknow.utils.PermissionChecker
@@ -76,12 +77,12 @@ fun MainScreen(
     DisposableEffect(Unit) {
         systemUiController.setStatusBarColor(
             color = bgColor1,
-            darkIcons = true  // 因为背景色较浅，所以使用深色图标
+            darkIcons = true
         )
         onDispose {}
     }
 
-    // 观察UI状态 - 使用正确的类型
+    // 观察UI状态
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
 
@@ -96,8 +97,10 @@ fun MainScreen(
         )
     )
 
-    // 页面状态
-    var showProfile by remember { mutableStateOf(false) } // 个人主页显示状态
+    // 页面状态 - 只保留个人主页显示状态
+    var showProfile by remember { mutableStateOf(false) }
+    // 添加滑动启用状态
+    var swipeEnabled by remember { mutableStateOf(true) }
 
     // 权限相关状态
     var showCameraPermissionDialog by remember { mutableStateOf(false) }
@@ -108,23 +111,22 @@ fun MainScreen(
 
     // 滑动相关状态
     val slideOffset = remember { Animatable(0f) }
-    // 获取屏幕宽度
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
     val maxSlideOffsetPx = with(LocalDensity.current) { screenWidth.toPx() }
-    val maxSlideOffset = maxSlideOffsetPx // 最大滑动距离
+    val maxSlideOffset = maxSlideOffsetPx
     val coroutineScope = rememberCoroutineScope()
 
     // 计算进度 (0f - 1f)
     val progress by remember { derivedStateOf { slideOffset.value / maxSlideOffset } }
 
-    // 是否显示识别结果（用于控制返回键行为）
+    // 是否显示识别结果
     val hasRecognitionResult = remember {
         derivedStateOf {
             uiState.plantWithDetails != null || uiState.result != null || uiState.error != null
         }
     }
 
-    // 处理返回键 - 简化处理逻辑
+    // 处理返回键 - 只处理个人主页和识别结果
     BackHandler(enabled = showProfile || hasRecognitionResult.value) {
         when {
             showProfile -> {
@@ -142,29 +144,25 @@ fun MainScreen(
 
     /**
      * 创建相册选择启动器
-     * 使用ActivityResultContractes.GetContent()契约来获取图片内容
      */
     val pickImageLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let {
-            // 通知ViewModel选择图片并自动开始完整识别流程
             viewModel.selectImageFromGallery(it)
-            viewModel.recognizePlantWithDetails() // 改为使用完整识别流程
+            viewModel.recognizePlantWithDetails()
         }
     }
 
     /**
      * 创建拍照启动器
-     * 使用 ActivityResultContracts.TakePicturePreview() 契约来获取拍照预览
      */
     val takePictureLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicturePreview()
     ) { bmp: Bitmap? ->
         bmp?.let {
-            // 通知ViewModel拍照并自动开始完整识别流程
             viewModel.takePhoto(it)
-            viewModel.recognizePlantWithDetails() // 改为使用完整识别流程
+            viewModel.recognizePlantWithDetails()
         }
     }
 
@@ -173,50 +171,43 @@ fun MainScreen(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         if (isGranted) {
-            // 权限已授予，执行拍照
             takePictureLauncher.launch(null)
         } else {
-            // 权限被拒绝，显示解释对话框
             showPermissionExplanation = true
         }
-        // 关闭权限请求对话框
         showCameraPermissionDialog = false
     }
 
     // 使用Scaffold布局作为根容器
     Scaffold(
-        containerColor = Color(0xFFE9F0F8) // 设置背景色为浅蓝色
+        containerColor = Color(0xFFE9F0F8)
     ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .pointerInput(uiState.isLoading, hasRecognitionResult.value, showProfile) {
-                    // 添加依赖：当加载状态、识别结果或个人主页状态变化时重新创建手势检测
+                .pointerInput(uiState.isLoading, hasRecognitionResult.value, showProfile, swipeEnabled) {
+                    // 根据 swipeEnabled 决定是否启用滑动
+                    if (!swipeEnabled) return@pointerInput
+
                     detectHorizontalDragGestures(
                         onDragEnd = {
                             coroutineScope.launch {
-                                // ========== 滑动结束处理逻辑 ==========
-
-                                // 条件1：从主页面切换到个人主页（向右滑动）
-                                // 要求：滑动超过60% + 当前不在个人主页 + 没有识别结果 + 不在加载状态
+                                // 滑动结束处理逻辑
                                 if (slideOffset.value > maxSlideOffset * 0.6f &&
                                     !showProfile &&
                                     !hasRecognitionResult.value &&
                                     !uiState.isLoading) {
-                                    // 执行切换到个人主页的动画
+                                    // 切换到个人主页
                                     slideOffset.animateTo(maxSlideOffset, animationSpec = tween(300))
                                     showProfile = true
                                 }
-                                // 条件2：从个人主页切换回主页面（向左滑动）
-                                // 要求：滑动不足40% + 当前在个人主页
                                 else if (slideOffset.value < maxSlideOffset * 0.4f && showProfile) {
-                                    // 执行切换回主页面的动画
+                                    // 切换回主页面
                                     slideOffset.animateTo(0f, animationSpec = tween(300))
                                     showProfile = false
                                 }
-                                // 条件3：保持当前状态（滑动距离在40%-60%之间）
                                 else {
-                                    // 根据当前页面状态弹回对应的位置
+                                    // 保持当前状态
                                     if (showProfile) {
                                         slideOffset.animateTo(maxSlideOffset, animationSpec = tween(300))
                                     } else {
@@ -226,18 +217,13 @@ fun MainScreen(
                             }
                         }
                     ) { change, dragAmount ->
-                        // ========== 滑动过程实时处理逻辑 ==========
-
-                        // 保护条件：在有识别结果或加载中时禁用所有滑动
+                        // 滑动过程实时处理逻辑
                         if (hasRecognitionResult.value || uiState.isLoading) {
                             return@detectHorizontalDragGestures
                         }
 
-                        // 计算新的滑动偏移量，限制在有效范围内 [0f, maxSlideOffset]
                         val newOffset = (slideOffset.value + dragAmount).coerceIn(0f, maxSlideOffset)
-
                         coroutineScope.launch {
-                            // 立即更新滑动位置（无动画），实现手指实时跟随效果
                             slideOffset.snapTo(newOffset)
                         }
                     }
@@ -250,16 +236,12 @@ fun MainScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .graphicsLayer {
-                        // 个人主页动画效果：
-                        // 初始位置：-maxSlideOffset（完全在左侧屏幕外）
-                        // 结束位置：0（完全显示在屏幕上）
                         translationX = -maxSlideOffset + slideOffset.value
                     }
             ) {
-                // 优化：只要滑动进度大于1%就显示个人主页，确保滑动时能实时看到
-                // 避免页面闪烁，提供流畅的视觉反馈
+                // 只要滑动进度大于1%就显示个人主页
                 if (progress > 0.01f) {
-                    // 个人主页 - 显示用户信息和功能入口
+                    // 个人主页 - 收藏功能完全由 ProfileScreen 内部管理
                     ProfileScreen(
                         onBackClick = {
                             // 返回按钮点击：动画滑动回主页面
@@ -268,13 +250,8 @@ fun MainScreen(
                                 showProfile = false
                             }
                         },
-                        onFavoritesClick = {
-                            // 收藏按钮点击：这里可以添加收藏功能入口
-                            // 暂时先关闭个人主页
-                            coroutineScope.launch {
-                                slideOffset.animateTo(0f, animationSpec = tween(300))
-                                showProfile = false
-                            }
+                        onSwipeEnabledChange = { enabled ->
+                            swipeEnabled = enabled
                         }
                     )
                 }
@@ -285,9 +262,6 @@ fun MainScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .graphicsLayer {
-                        // 主页面动画效果：
-                        // 初始位置：0（完全显示在屏幕上）
-                        // 结束位置：maxSlideOffset（完全在右侧屏幕外）
                         translationX = slideOffset.value
                     }
             ) {
@@ -297,19 +271,16 @@ fun MainScreen(
                     favoriteViewModel = favoriteViewModel,
                     pickImageLauncher = pickImageLauncher,
                     onTakePictureClick = {
-                        // 处理拍照按钮点击
                         if (permissionChecker.hasCameraPermission()) {
-                            // 已有权限，直接拍照
                             takePictureLauncher.launch(null)
                         } else {
-                            // 没有权限，显示权限请求对话框
                             showCameraPermissionDialog = true
                         }
                     },
                     hasRecognitionResult = hasRecognitionResult.value,
                     paddingValues = paddingValues,
                     onUserIconClick = {
-                        // 用户图标点击：显示个人主页并执行滑动动画
+                        // 用户图标点击：显示个人主页
                         coroutineScope.launch {
                             slideOffset.animateTo(maxSlideOffset, animationSpec = tween(300))
                             showProfile = true
@@ -318,15 +289,15 @@ fun MainScreen(
                 )
             }
 
-            // 修复：添加边缘检测区域，让左侧边缘滑动更容易触发
+            // 边缘检测区域
             Box(
                 modifier = Modifier
                     .fillMaxHeight()
                     .width(20.dp)
                     .pointerInput(Unit) {
                         detectHorizontalDragGestures { change, dragAmount ->
-                            // 只在左侧边缘且向右滑动时触发
-                            if (dragAmount > 0 && !showProfile && !hasRecognitionResult.value && !uiState.isLoading) {
+                            // 只在滑动启用时检测边缘手势
+                            if (swipeEnabled && dragAmount > 0 && !showProfile && !hasRecognitionResult.value && !uiState.isLoading) {
                                 coroutineScope.launch {
                                     val newOffset = (slideOffset.value + dragAmount).coerceIn(0f, maxSlideOffset)
                                     slideOffset.snapTo(newOffset)
@@ -348,12 +319,10 @@ fun MainScreen(
         PermissionDialog(
             permissionType = "相机",
             onAllowClick = {
-                // 请求相机权限
                 permissionLauncher.launch(android.Manifest.permission.CAMERA)
             },
             onDenyClick = {
                 showCameraPermissionDialog = false
-                // 可以在这里记录用户拒绝权限
             },
             onDismissRequest = {
                 showCameraPermissionDialog = false
@@ -366,7 +335,6 @@ fun MainScreen(
         PermissionExplanationDialog(
             permissionType = "相机",
             onGoToSettings = {
-                // 跳转到应用设置页面
                 permissionChecker.openAppSettings()
                 showPermissionExplanation = false
             },
