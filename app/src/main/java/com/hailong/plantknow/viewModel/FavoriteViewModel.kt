@@ -16,6 +16,13 @@ class FavoriteViewModel(
 
     val favoritePlants = favoriteRepository.getAllFavorites()
 
+    val favoriteCount: StateFlow<Int> = favoriteRepository.getFavoriteCount()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = 0
+        )
+
     fun addFavorite(plantWithDetails: PlantWithDetails, image: Any?) {
         viewModelScope.launch {
             favoriteRepository.addToFavorites(plantWithDetails, image)

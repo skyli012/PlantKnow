@@ -17,4 +17,7 @@ interface FavoritePlantDao {
 
     @Query("SELECT COUNT(*) FROM favorite_plants WHERE plantName = :plantName")
     suspend fun isFavorite(plantName: String): Boolean
+
+    @Query("SELECT COUNT(*) FROM favorite_plants")
+    fun getFavoriteCount(): Flow<Int>
 }

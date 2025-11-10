@@ -34,4 +34,6 @@ class FavoriteRepository(
     suspend fun isFavorite(plantName: String): Boolean {
         return favoritePlantDao.isFavorite(plantName)
     }
+
+    fun getFavoriteCount(): Flow<Int> = favoritePlantDao.getFavoriteCount()
 }

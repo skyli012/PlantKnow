@@ -15,25 +15,25 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.hailong.plantknow.viewmodel.FavoriteViewModel
 
 @Composable
-fun UserInfoCard() {
+fun UserInfoCard(favoriteViewModel: FavoriteViewModel = viewModel()) {
+    val favoriteCount by favoriteViewModel.favoriteCount.collectAsState()
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -99,7 +99,11 @@ fun UserInfoCard() {
         ) {
             BoxedStatItem(count = "128", label = "识别次数", modifier = Modifier.weight(1f))
             BoxedStatItem(count = "42", label = "学习天数", modifier = Modifier.weight(1f))
-            BoxedStatItem(count = "36", label = "收藏数量", modifier = Modifier.weight(1f))
+            BoxedStatItem(
+                count = favoriteCount.toString(), // ✅ 使用数据库实时值
+                label = "收藏数量",
+                modifier = Modifier.weight(1f)
+            )
         }
     }
 }
@@ -132,30 +136,5 @@ private fun BoxedStatItem(
                 color = Color(0xFF95A5A6)
             )
         }
-    }
-}
-
-// 保留原有的 MiniStatItem，如果需要的话
-@Composable
-private fun MiniStatItem(
-    count: String,
-    label: String,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = modifier
-    ) {
-        Text(
-            text = count,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF4CAF50)
-        )
-        Text(
-            text = label,
-            fontSize = 11.sp,
-            color = Color(0xFF95A5A6)
-        )
     }
 }
