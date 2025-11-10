@@ -1,6 +1,7 @@
 // ProfileScreen.kt
 package com.hailong.plantknow.ui.screen
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.*
@@ -101,53 +102,33 @@ fun ProfileScreen(
 private fun PersonalProfileContent(
     onFavoritesClick: () -> Unit
 ) {
-    Scaffold(
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        text = "个人主页",
-                        color = Color(0xFF364858),
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 18.sp
-                    )
-                },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = Color.Transparent
-                )
-            )
-        },
-        containerColor = Color(0xFFE9F0F8)
-    ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            // 用户信息卡片
-            item {
-                UserInfoCard()
-            }
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFE9F0F8))
+    ) {
+        // 顶部间距
+        item {
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+        // 用户信息卡片
+        item {
+            UserInfoCard()
+        }
 
-            // 收藏入口卡片
-            item {
-                FavoriteEntryCard(onFavoritesClick = onFavoritesClick)
-            }
+        // 收藏入口卡片
+        item {
+            FavoriteEntryCard(onFavoritesClick = onFavoritesClick)
+        }
 
-            // 其他功能卡片
-            item {
-                OtherFeaturesSection()
-            }
+        // 其他功能卡片
+        item {
+            OtherFeaturesSection()
+        }
 
-            // 底部间距
-            item {
-                Spacer(modifier = Modifier.height(80.dp))
-            }
+        // 底部间距
+        item {
+            Spacer(modifier = Modifier.height(80.dp))
         }
     }
 }
-
-
-
-
-

@@ -1,6 +1,7 @@
 package com.hailong.plantknow.ui.profile
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Settings
@@ -33,51 +35,52 @@ import androidx.compose.ui.unit.sp
 
 @Composable
 fun OtherFeaturesSection() {
-    Card(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 8.dp),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.White
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+            .padding(horizontal = 20.dp, vertical = 8.dp)
     ) {
+        Text(
+            text = "更多功能",
+            fontSize = 18.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = Color(0xFF2C3E50),
+            modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 20.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(Color(0xFFF8F9FA))
         ) {
-            Text(
-                text = "更多功能",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Color(0xFF364858),
-                modifier = Modifier.padding(horizontal = 20.dp)
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // 功能项列表
             FeatureItem(
                 title = "识别历史",
                 description = "查看您的植物识别记录",
                 icon = Icons.Default.History,
-                onClick = { /* TODO: 实现识别历史功能 */ }
+                iconColor = Color(0xFF4ECDC4),
+                showDivider = true,
+                onClick = { /* TODO */ }
             )
 
             FeatureItem(
                 title = "应用设置",
                 description = "个性化您的应用体验",
                 icon = Icons.Default.Settings,
-                onClick = { /* TODO: 实现设置功能 */ }
+                iconColor = Color(0xFF6C5CE7),
+                showDivider = true,
+                onClick = { /* TODO */ }
             )
 
             FeatureItem(
                 title = "关于我们",
                 description = "了解应用信息和版本",
                 icon = Icons.Default.Info,
-                onClick = { /* TODO: 实现关于页面 */ }
+                iconColor = Color(0xFFFD9644),
+                showDivider = false,
+                onClick = { /* TODO */ }
             )
         }
     }
@@ -88,71 +91,67 @@ private fun FeatureItem(
     title: String,
     description: String,
     icon: ImageVector,
+    iconColor: Color,
+    showDivider: Boolean = true,
     onClick: () -> Unit
 ) {
-    Card(
-        onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 6.dp),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color(0xFFF8F9FA)
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
+    Column {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .clickable(onClick = onClick)
+                .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 图标
             Box(
                 modifier = Modifier
-                    .size(48.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Color(0xFFE9F0F8)),
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(iconColor.copy(alpha = 0.1f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = title,
-                    tint = Color(0xFF4CAF50),
-                    modifier = Modifier.size(24.dp)
+                    tint = iconColor,
+                    modifier = Modifier.size(20.dp)
                 )
             }
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            // 文本内容
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
-                    fontSize = 16.sp,
+                    fontSize = 15.sp,
                     fontWeight = FontWeight.Medium,
-                    color = Color(0xFF364858)
+                    color = Color(0xFF2C3E50)
                 )
 
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(2.dp))
 
                 Text(
                     text = description,
                     fontSize = 12.sp,
-                    color = Color(0xFF666666)
+                    color = Color(0xFF7F8C8D)
                 )
             }
 
-            // 右侧箭头（使用旋转的ArrowBack图标）
             Icon(
-                imageVector = Icons.Default.ArrowBack,
+                imageVector = Icons.Default.ChevronRight,
                 contentDescription = "进入",
-                tint = Color(0xFFCCCCCC),
+                tint = Color(0xFF95A5A6),
+                modifier = Modifier.size(18.dp)
+            )
+        }
+
+        if (showDivider) {
+            Spacer(
                 modifier = Modifier
-                    .size(16.dp)
-                    .rotate(180f)
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(Color(0xFFECF0F1))
+                    .padding(horizontal = 16.dp)
             )
         }
     }
