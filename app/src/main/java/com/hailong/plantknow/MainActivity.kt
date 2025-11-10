@@ -21,6 +21,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.toArgb
+import androidx.core.view.WindowCompat
 import com.hailong.plantknow.network.AuthHelper
 import com.hailong.plantknow.ui.MainScreen
 import com.hailong.plantknow.ui.screen.SplashScreen  // 导入您的SplashScreen
@@ -34,6 +36,15 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // 在 setContent 之前设置状态栏颜色
+        window.statusBarColor = Color(0xFFE9F0F8).toArgb()
+        window.navigationBarColor = Color(0xFFE9F0F8).toArgb()
+
+        // 如果需要亮色状态栏图标（深色文字）
+        WindowCompat.getInsetsController(window, window.decorView).apply {
+            isAppearanceLightStatusBars = true
+            isAppearanceLightNavigationBars = true
+        }
 
         Log.d(TAG, "应用启动")
 
