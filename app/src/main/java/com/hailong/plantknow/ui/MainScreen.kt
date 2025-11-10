@@ -192,22 +192,24 @@ fun MainScreen(
                     detectHorizontalDragGestures(
                         onDragEnd = {
                             coroutineScope.launch {
-                                // 滑动结束处理逻辑
-                                if (slideOffset.value > maxSlideOffset * 0.6f &&
+                                val currentOffset = slideOffset.value
+                                val threshold = maxSlideOffset * 0.1f
+
+                                if (currentOffset > threshold &&
                                     !showProfile &&
                                     !hasRecognitionResult.value &&
                                     !uiState.isLoading) {
-                                    // 切换到个人主页
-                                    slideOffset.animateTo(maxSlideOffset, animationSpec = tween(300))
+                                    // 向右滑动超过阈值，切换到个人主页
+                                    slideOffset.animateTo(maxSlideOffset, animationSpec = tween(130))
                                     showProfile = true
                                 }
-                                else if (slideOffset.value < maxSlideOffset * 0.4f && showProfile) {
-                                    // 切换回主页面
-                                    slideOffset.animateTo(0f, animationSpec = tween(300))
+                                else if (currentOffset < (maxSlideOffset - threshold) && showProfile) {
+                                    // 向左滑动超过阈值，切换回主页面
+                                    slideOffset.animateTo(0f, animationSpec = tween(130))
                                     showProfile = false
                                 }
                                 else {
-                                    // 保持当前状态
+                                    // 滑动距离不足，回到原位置
                                     if (showProfile) {
                                         slideOffset.animateTo(maxSlideOffset, animationSpec = tween(300))
                                     } else {
@@ -217,12 +219,20 @@ fun MainScreen(
                             }
                         }
                     ) { change, dragAmount ->
-                        // 滑动过程实时处理逻辑
                         if (hasRecognitionResult.value || uiState.isLoading) {
                             return@detectHorizontalDragGestures
                         }
 
-                        val newOffset = (slideOffset.value + dragAmount).coerceIn(0f, maxSlideOffset)
+                        val newOffset = when {
+                            showProfile -> {
+                                (slideOffset.value + dragAmount).coerceIn(0f, maxSlideOffset)
+                            }
+                            else -> {
+                                (slideOffset.value + dragAmount).coerceIn(0f, maxSlideOffset)
+                            }
+                        }
+
+                        // 使用 snapTo 而不是直接赋值
                         coroutineScope.launch {
                             slideOffset.snapTo(newOffset)
                         }
