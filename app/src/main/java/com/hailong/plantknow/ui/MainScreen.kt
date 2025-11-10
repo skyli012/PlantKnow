@@ -200,12 +200,12 @@ fun MainScreen(
                                     !hasRecognitionResult.value &&
                                     !uiState.isLoading) {
                                     // 向右滑动超过阈值，切换到个人主页
-                                    slideOffset.animateTo(maxSlideOffset, animationSpec = tween(130))
+                                    slideOffset.animateTo(maxSlideOffset, animationSpec = tween(145))
                                     showProfile = true
                                 }
                                 else if (currentOffset < (maxSlideOffset - threshold) && showProfile) {
                                     // 向左滑动超过阈值，切换回主页面
-                                    slideOffset.animateTo(0f, animationSpec = tween(130))
+                                    slideOffset.animateTo(0f, animationSpec = tween(145))
                                     showProfile = false
                                 }
                                 else {
