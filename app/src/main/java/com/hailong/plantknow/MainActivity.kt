@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.view.WindowCompat
+import com.hailong.plantknow.database.UserDatabase
 import com.hailong.plantknow.network.AuthHelper
 import com.hailong.plantknow.ui.MainScreen
 import com.hailong.plantknow.ui.screen.SplashScreen  // 导入您的SplashScreen

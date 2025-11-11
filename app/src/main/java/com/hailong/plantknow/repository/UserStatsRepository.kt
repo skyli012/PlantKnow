@@ -21,9 +21,11 @@ class UserStatsRepository(private val database: UserDatabase) {
     suspend fun initializeIfNeeded() {
         val currentStats = userStatsDao.getUserStats()
         // 如果还没有数据，插入初始数据
-        userStatsDao.insertOrUpdateStats(
-            UserStats(id = 1, recognitionCount = 1, learningDays = 1)
-        )
+        if (currentStats == null) { // 数据库为空
+            userStatsDao.insertOrUpdateStats(
+                UserStats(id = 1, recognitionCount = 0, learningDays = 0)
+            )
+        }
     }
 
     suspend fun incrementRecognitionCount() {
@@ -32,13 +34,5 @@ class UserStatsRepository(private val database: UserDatabase) {
 
     suspend fun incrementLearningDays() {
         userStatsDao.incrementLearningDays()
-    }
-
-    suspend fun setRecognitionCount(count: Int) {
-        userStatsDao.setRecognitionCount(count)
-    }
-
-    suspend fun setLearningDays(days: Int) {
-        userStatsDao.setLearningDays(days)
     }
 }

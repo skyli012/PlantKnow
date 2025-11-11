@@ -16,7 +16,7 @@ class PlantViewModelFactory(private val context: Context) : ViewModelProvider.Fa
         if (modelClass.isAssignableFrom(PlantViewModel::class.java)) {
 
             // ✅ 1. 先获取数据库实例
-            val userDatabase = UserDatabase.getDatabase(context)
+            val userDatabase = UserDatabase.getInstance(context)
 
             // ✅ 2. 传入数据库实例给仓库
             val userStatsRepository = UserStatsRepository(userDatabase)
