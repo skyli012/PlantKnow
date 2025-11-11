@@ -12,10 +12,14 @@ import android.util.Log
 import com.hailong.plantknow.model.PlantResult
 import com.hailong.plantknow.model.PlantWithDetails
 import com.hailong.plantknow.repository.PlantRecognitionRepository
+import com.hailong.plantknow.repository.UserStatsRepository
 import com.hailong.plantknow.utils.Result
 import kotlinx.coroutines.flow.update
 
-class PlantViewModel(private val plantRecognitionRepository: PlantRecognitionRepository) : ViewModel() {
+class PlantViewModel(
+    private val plantRecognitionRepository: PlantRecognitionRepository,
+    private val userStatsRepository: UserStatsRepository // ✅ 新增依赖
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PlantRecognitionState())
     val uiState: StateFlow<PlantRecognitionState> = _uiState.asStateFlow()

@@ -16,7 +16,10 @@ import com.hailong.plantknow.model.ChatMessage
 import com.hailong.plantknow.model.PlantWithDetails
 import com.hailong.plantknow.utils.Constants
 
-class PlantRecognitionRepository(private val context: Context) {
+class PlantRecognitionRepository(
+    private val context: Context,
+    private val userStatsRepository: UserStatsRepository
+) {
 
     suspend fun recognizePlantFromBitmap(bitmap: Bitmap): Result<PlantResult> = withContext(Dispatchers.IO) {
         Log.d("PlantRepository", "从Bitmap开始识别")
@@ -50,6 +53,10 @@ class PlantRecognitionRepository(private val context: Context) {
                 if (results != null && results.isNotEmpty()) {
                     results.firstOrNull()?.let { plantResult ->
                         Log.d("PlantRepository", "识别成功: ${plantResult.plantName}, 置信度: ${plantResult.confidence}")
+                        // ✅ 增加识别次数（只在识别成功时调用）
+                        if (plantResult.plantName != "非植物") {
+                            userStatsRepository.incrementRecognitionCount()
+                        }
                         Result.Success(plantResult)
                     } ?: run {
                         Log.e("PlantRepository", "API未返回有效的植物数据")

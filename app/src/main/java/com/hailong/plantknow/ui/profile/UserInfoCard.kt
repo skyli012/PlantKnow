@@ -25,15 +25,25 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.hailong.plantknow.viewmodel.FavoriteViewModel
+import com.hailong.plantknow.viewmodel.UserStatsViewModel
+import com.hailong.plantknow.viewmodel.UserStatsViewModelFactory
 
 @Composable
-fun UserInfoCard(favoriteViewModel: FavoriteViewModel = viewModel()) {
+fun UserInfoCard(
+    favoriteViewModel: FavoriteViewModel = viewModel(),
+    userStatsViewModel: UserStatsViewModel = viewModel(
+        factory = UserStatsViewModelFactory(LocalContext.current)
+    )
+) {
     val favoriteCount by favoriteViewModel.favoriteCount.collectAsState()
+    val recognitionCount by userStatsViewModel.recognitionCount.collectAsState(initial = 128)
+    val learningDays by userStatsViewModel.learningDays.collectAsState(initial = 42)
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -97,8 +107,16 @@ fun UserInfoCard(favoriteViewModel: FavoriteViewModel = viewModel()) {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            BoxedStatItem(count = "128", label = "识别次数", modifier = Modifier.weight(1f))
-            BoxedStatItem(count = "42", label = "学习天数", modifier = Modifier.weight(1f))
+            BoxedStatItem(
+                count = recognitionCount.toString(), // 从Room数据库读取
+                label = "识别次数",
+                modifier = Modifier.weight(1f)
+            )
+            BoxedStatItem(
+                count = learningDays.toString(), // 从Room数据库读取
+                label = "学习天数",
+                modifier = Modifier.weight(1f)
+            )
             BoxedStatItem(
                 count = favoriteCount.toString(), // ✅ 使用数据库实时值
                 label = "收藏数量",
