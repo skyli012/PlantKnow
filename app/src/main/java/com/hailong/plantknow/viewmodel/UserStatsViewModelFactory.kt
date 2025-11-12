@@ -12,7 +12,7 @@ class UserStatsViewModelFactory(
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(UserStatsViewModel::class.java)) {
             val database = UserDatabase.getInstance(context)
-            val repository = UserStatsRepository(database)
+            val repository = UserStatsRepository(database, context)
             return UserStatsViewModel(repository) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")

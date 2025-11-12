@@ -19,7 +19,7 @@ class PlantViewModelFactory(private val context: Context) : ViewModelProvider.Fa
             val userDatabase = UserDatabase.getInstance(context)
 
             // ✅ 2. 传入数据库实例给仓库
-            val userStatsRepository = UserStatsRepository(userDatabase)
+            val userStatsRepository = UserStatsRepository(userDatabase,context)
 
             // ✅ 3. 植物识别仓库依赖用户统计仓库
             val plantRepository = PlantRecognitionRepository(context, userStatsRepository)

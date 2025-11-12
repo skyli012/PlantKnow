@@ -56,6 +56,8 @@ class PlantRecognitionRepository(
                         // ✅ 增加识别次数（只在识别成功时调用）
                         if (plantResult.plantName != "非植物") {
                             userStatsRepository.incrementRecognitionCount()
+                            // ✅ 新增：记录学习活动（只在识别植物时记录）
+                            userStatsRepository.recordLearningActivity()
                         }
                         Result.Success(plantResult)
                     } ?: run {
