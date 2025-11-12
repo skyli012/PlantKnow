@@ -38,4 +38,5 @@ class UserProfileViewModel(private val repository: UserProfileRepository) : View
             repository.updateUserInfo(name, bio, avatarUri)
         }
     }
+
 }

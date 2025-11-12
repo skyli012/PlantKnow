@@ -28,13 +28,17 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.foundation.clickable
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
+import com.hailong.plantknow.ui.component.EditProfileDialog
 import com.hailong.plantknow.viewmodel.FavoriteViewModel
 import com.hailong.plantknow.viewmodel.UserStatsViewModel
 import com.hailong.plantknow.viewmodel.UserStatsViewModelFactory
@@ -56,6 +60,18 @@ fun UserInfoCard(
     val favoriteCount by favoriteViewModel.favoriteCount.collectAsState()
     val recognitionCount by userStatsViewModel.recognitionCount.collectAsState(initial = 128)
     val learningDays by userStatsViewModel.learningDays.collectAsState(initial = 42)
+    val showEditDialog = remember { mutableStateOf(false) }
+
+    // 添加调试信息
+    LaunchedEffect(userProfile) {
+        println("=== 用户资料调试信息 ===")
+        println("userProfile: $userProfile")
+        println("userProfile?.name: ${userProfile?.name}")
+        println("userProfile?.bio: ${userProfile?.bio}")
+        println("userProfile?.avatarUri: ${userProfile?.avatarUri}")
+        println("avatarUri 是否为空: ${userProfile?.avatarUri.isNullOrEmpty()}")
+        println("=== 调试结束 ===")
+    }
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -73,22 +89,29 @@ fun UserInfoCard(
                 modifier = Modifier
                     .size(80.dp)
                     .clip(CircleShape)
-                    .background(
-                        brush = Brush.verticalGradient(
-                            colors = listOf(
-                                Color(0xFF6BBD6E),
-                                Color(0xFF4CAF50)
-                            )
-                        )
-                    ),
+                    .background(Color(0xFFF5F5F5)) // 简单的灰色背景
+                    .clickable { showProfileDialog.value = true },
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Default.Person,
-                    contentDescription = "用户头像",
-                    tint = Color.White,
-                    modifier = Modifier.size(36.dp)
-                )
+                if (!userProfile?.avatarUri.isNullOrEmpty()) {
+                    // 有头像：显示数据库中的图片
+                    AsyncImage(
+                        model = userProfile?.avatarUri,
+                        contentDescription = "用户头像",
+                        modifier = Modifier
+                            .size(80.dp)
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    // 没有头像：显示默认图标
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = "用户头像",
+                        tint = Color(0xFF7F8C8D),
+                        modifier = Modifier.size(36.dp)
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.width(16.dp))
@@ -114,12 +137,31 @@ fun UserInfoCard(
             }
         }
 
-        // 弹窗：展示用户完整信息（抽到组件中）
+        // 展示弹窗
         if (showProfileDialog.value) {
-            UserProfileDialog(userProfile = userProfile) {
-                showProfileDialog.value = false
-            }
+            UserProfileDialog(
+                userProfile = userProfile,
+                onDismiss = { showProfileDialog.value = false },
+                onEdit = {
+                    showProfileDialog.value = false
+                    showEditDialog.value = true
+                }
+            )
         }
+
+        // 编辑弹窗
+        if (showEditDialog.value) {
+            EditProfileDialog(
+                userProfile = userProfile,
+                onDismiss = { showEditDialog.value = false },
+                onSave = { name, bio, avatarUri ->
+                    userProfileViewModel.updateUserInfo(name, bio, avatarUri)
+                    showEditDialog.value = false
+                }
+            )
+        }
+
+
 
         Spacer(modifier = Modifier.height(20.dp))
 

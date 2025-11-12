@@ -1,6 +1,8 @@
 package com.hailong.plantknow.ui.component
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,6 +17,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -33,34 +36,29 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.hailong.plantknow.data.entity.UserProfile
 
+// UserProfileDialog.kt - 修改版本
 @Composable
 fun UserProfileDialog(
     userProfile: UserProfile?,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onEdit: () -> Unit  // 新增编辑回调
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = Color.White, // 设置背景为白色
+        containerColor = Color.White,
         shape = RoundedCornerShape(16.dp),
         title = {
-            // 头像和名字在一行
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
             ) {
+                // 在 UserProfileDialog 中检查并修复
                 Box(
                     modifier = Modifier
                         .size(50.dp)
                         .clip(CircleShape)
-                        .background(
-                            if (userProfile?.avatarUri.isNullOrEmpty()) {
-                                Brush.verticalGradient(
-                                    colors = listOf(Color(0xFF6BBD6E), Color(0xFF4CAF50))
-                                )
-                            } else {
-                                Brush.verticalGradient(colors = listOf(Color.Transparent))
-                            }
-                        ),
+                        .background(Color(0xFFF5F5F5)) // 使用单一颜色
+                        .clickable { /* 如果有点击功能的话 */ },
                     contentAlignment = Alignment.Center
                 ) {
                     if (!userProfile?.avatarUri.isNullOrEmpty()) {
@@ -76,7 +74,7 @@ fun UserProfileDialog(
                         Icon(
                             imageVector = Icons.Default.Person,
                             contentDescription = "用户头像",
-                            tint = Color.White,
+                            tint = Color(0xFF7F8C8D),
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -97,18 +95,40 @@ fun UserProfileDialog(
             }
         },
         text = {
-            // 个性签名内容
-            Text(
-                text = userProfile?.bio ?: "这个人很懒，还没有填写个性签名～",
-                fontSize = 14.sp,
-                color = if (userProfile?.bio.isNullOrEmpty()) Color(0xFFBDC3C7) else Color(0xFF2C3E50),
-                lineHeight = 20.sp,
-                modifier = Modifier.fillMaxWidth()
-            )
+            Column {
+                Text(
+                    text = userProfile?.bio ?: "这个人很懒，还没有填写个性签名～",
+                    fontSize = 14.sp,
+                    color = if (userProfile?.bio.isNullOrEmpty()) Color(0xFFBDC3C7) else Color(0xFF2C3E50),
+                    lineHeight = 20.sp,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // 添加编辑提示
+                Text(
+                    text = "提示：点击下方按钮可编辑资料",
+                    fontSize = 12.sp,
+                    color = Color(0xFF7F8C8D),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("关闭", color = Color(0xFF4CAF50))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                TextButton(onClick = onDismiss) {
+                    Text("关闭", color = Color(0xFF7F8C8D))
+                }
+
+                Button(
+                    onClick = onEdit
+                ) {
+                    Text("编辑资料", color = Color.White)
+                }
             }
         }
     )
