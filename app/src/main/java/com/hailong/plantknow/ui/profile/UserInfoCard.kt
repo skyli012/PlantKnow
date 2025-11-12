@@ -17,12 +17,17 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import com.hailong.plantknow.ui.component.UserProfileDialog
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.foundation.clickable
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -33,6 +38,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.hailong.plantknow.viewmodel.FavoriteViewModel
 import com.hailong.plantknow.viewmodel.UserStatsViewModel
 import com.hailong.plantknow.viewmodel.UserStatsViewModelFactory
+import com.hailong.plantknow.viewmodel.UserProfileViewModel
+import com.hailong.plantknow.viewmodel.UserProfileViewModelFactory
 
 @Composable
 fun UserInfoCard(
@@ -41,6 +48,11 @@ fun UserInfoCard(
         factory = UserStatsViewModelFactory(LocalContext.current)
     )
 ) {
+    val userProfileViewModel: UserProfileViewModel = viewModel(
+        factory = UserProfileViewModelFactory(LocalContext.current)
+    )
+    val userProfile by userProfileViewModel.userProfile.collectAsState(initial = null)
+    val showProfileDialog = remember { mutableStateOf(false) }
     val favoriteCount by favoriteViewModel.favoriteCount.collectAsState()
     val recognitionCount by userStatsViewModel.recognitionCount.collectAsState(initial = 128)
     val learningDays by userStatsViewModel.learningDays.collectAsState(initial = 42)
@@ -49,9 +61,11 @@ fun UserInfoCard(
             .fillMaxWidth()
             .padding(horizontal = 20.dp, vertical = 16.dp)
     ) {
-        // 第一板块：头像和基本信息
+        // 第一板块：头像和基本信息（可点击，打开用户信息弹窗）
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { showProfileDialog.value = true },
             verticalAlignment = Alignment.CenterVertically
         ) {
             // 用户头像
@@ -79,12 +93,12 @@ fun UserInfoCard(
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            // 用户信息
+            // 用户信息（来自数据库）
             Column(
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = "Skyyy",
+                    text = userProfile?.name ?: "Skyyy",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF2C3E50)
@@ -93,10 +107,17 @@ fun UserInfoCard(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
-                    text = "热爱大自然，喜欢探索各种植物奥秘",
+                    text = userProfile?.bio ?: "热爱大自然，喜欢探索各种植物奥秘",
                     fontSize = 13.sp,
                     color = Color(0xFF7F8C8D)
                 )
+            }
+        }
+
+        // 弹窗：展示用户完整信息（抽到组件中）
+        if (showProfileDialog.value) {
+            UserProfileDialog(userProfile = userProfile) {
+                showProfileDialog.value = false
             }
         }
 
