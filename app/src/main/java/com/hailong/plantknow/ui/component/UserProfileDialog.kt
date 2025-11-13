@@ -97,6 +97,7 @@ fun UserProfileDialog(
         },
         text = {
             Column {
+                Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = userProfile?.bio ?: "这个人很懒，还没有填写个性签名～",
                     fontSize = 14.sp,
@@ -105,15 +106,15 @@ fun UserProfileDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+//                Spacer(modifier = Modifier.height(16.dp))
 
-                // 添加编辑提示
-                Text(
-                    text = "提示：点击下方按钮可编辑资料",
-                    fontSize = 12.sp,
-                    color = Color(0xFF7F8C8D),
-                    modifier = Modifier.fillMaxWidth()
-                )
+//                // 添加编辑提示
+//                Text(
+//                    text = "提示：点击下方按钮可编辑资料",
+//                    fontSize = 12.sp,
+//                    color = Color(0xFF7F8C8D),
+//                    modifier = Modifier.fillMaxWidth()
+//                )
             }
         },
         confirmButton = {
