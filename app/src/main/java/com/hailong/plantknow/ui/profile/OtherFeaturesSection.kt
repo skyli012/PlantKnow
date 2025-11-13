@@ -34,7 +34,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun OtherFeaturesSection() {
+fun OtherFeaturesSection(
+    onAboutClick: () -> Unit = {}
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -58,7 +60,7 @@ fun OtherFeaturesSection() {
         ) {
             FeatureItem(
                 title = "识别历史",
-                description = "查看您的植物识别记录",
+                description = "查看您的植物识别记录------开发中",
                 icon = Icons.Default.History,
                 iconColor = Color(0xFF4ECDC4),
                 showDivider = true,
@@ -67,7 +69,7 @@ fun OtherFeaturesSection() {
 
             FeatureItem(
                 title = "应用设置",
-                description = "个性化您的应用体验",
+                description = "个性化您的应用体验------开发中",
                 icon = Icons.Default.Settings,
                 iconColor = Color(0xFF6C5CE7),
                 showDivider = true,
@@ -80,7 +82,7 @@ fun OtherFeaturesSection() {
                 icon = Icons.Default.Info,
                 iconColor = Color(0xFFFD9644),
                 showDivider = false,
-                onClick = { /* TODO */ }
+                onClick = onAboutClick
             )
         }
     }

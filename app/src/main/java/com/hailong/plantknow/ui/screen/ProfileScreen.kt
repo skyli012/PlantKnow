@@ -16,6 +16,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.hailong.plantknow.database.FavoritePlantDatabase
 import com.hailong.plantknow.model.FavoritePlant
 import com.hailong.plantknow.repository.FavoriteRepository
+import com.hailong.plantknow.ui.component.AboutContent
 import com.hailong.plantknow.ui.profile.FavoriteEntryCard
 import com.hailong.plantknow.ui.profile.OtherFeaturesSection
 import com.hailong.plantknow.ui.profile.UserInfoCard
@@ -46,10 +47,15 @@ fun ProfileScreen(
     // 在 ProfileScreen 内部管理收藏相关的状态 - 明确指定类型
     var showFavoriteList by remember { mutableStateOf(false) }
     var selectedFavorite by remember { mutableStateOf<FavoritePlant?>(null) }
+    var showAbout by remember { mutableStateOf(false) }
 
     // 在 ProfileScreen 内部处理返回键逻辑
-    BackHandler(enabled = showFavoriteList || selectedFavorite != null) {
+    BackHandler(enabled = showFavoriteList || selectedFavorite != null || showAbout) {
         when {
+            showAbout -> {
+                // 如果正在显示About页面，返回个人主页
+                showAbout = false
+            }
             selectedFavorite != null -> {
                 // 如果正在显示收藏详情，返回收藏列表
                 selectedFavorite = null
@@ -62,14 +68,20 @@ fun ProfileScreen(
     }
 
     // 监听页面变化，通知 MainScreen 是否允许滑动
-    LaunchedEffect(showFavoriteList, selectedFavorite) {
+    LaunchedEffect(showFavoriteList, selectedFavorite, showAbout) {
         // 只有在显示个人主页时才允许滑动返回
-        val allowSwipe = !showFavoriteList && selectedFavorite == null
+        val allowSwipe = !showFavoriteList && selectedFavorite == null && !showAbout
         onSwipeEnabledChange(allowSwipe)
     }
 
     // 根据状态显示不同页面
     when {
+        showAbout -> {
+            // About 页面
+            AboutContent(
+                onBackClick = { showAbout = false }
+            )
+        }
         selectedFavorite != null -> {
             // 收藏详情页面 - 使用非空断言，因为前面已经检查了不为null
             FavoriteDetailScreen(
@@ -91,7 +103,8 @@ fun ProfileScreen(
         else -> {
             // 个人主页内容
             PersonalProfileContent(
-                onFavoritesClick = { showFavoriteList = true }
+                onFavoritesClick = { showFavoriteList = true },
+                onAboutClick = { showAbout = true }
             )
         }
     }
@@ -100,7 +113,8 @@ fun ProfileScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PersonalProfileContent(
-    onFavoritesClick: () -> Unit
+    onFavoritesClick: () -> Unit,
+    onAboutClick: () -> Unit
 ) {
     LazyColumn(
         modifier = Modifier
@@ -123,7 +137,7 @@ private fun PersonalProfileContent(
 
         // 其他功能卡片
         item {
-            OtherFeaturesSection()
+            OtherFeaturesSection(onAboutClick = onAboutClick)
         }
 
         // 底部间距
