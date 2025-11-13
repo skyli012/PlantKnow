@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -125,7 +126,10 @@ fun UserProfileDialog(
                 }
 
                 Button(
-                    onClick = onEdit
+                    onClick = onEdit,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFC6A9F8)
+                    )
                 ) {
                     Text("编辑资料", color = Color.White)
                 }

@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
@@ -262,7 +263,11 @@ fun EditProfileDialog(
 
                 Button(
                     onClick = { onSave(name, bio, avatarUri) },
-                    enabled = !isLoading
+                    enabled = !isLoading,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFC6A9F8)
+                    )
+
                 ) {
                     Text("保存")
                 }
