@@ -19,8 +19,6 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -28,7 +26,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -37,15 +34,14 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.hailong.plantknow.data.entity.UserProfile
 
-// UserProfileDialog.kt - 修改版本
 @Composable
 fun UserProfileDialog(
     userProfile: UserProfile?,
-    onDismiss: () -> Unit,
-    onEdit: () -> Unit  // 新增编辑回调
+    onDismiss: () -> Unit,  // 这个用于返回到个人主页
+    onEdit: () -> Unit      // 这个用于进入编辑对话框
 ) {
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = onDismiss,  // 点击空白处或返回键直接返回到个人主页
         containerColor = Color.White,
         shape = RoundedCornerShape(16.dp),
         title = {
@@ -53,12 +49,11 @@ fun UserProfileDialog(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                // 在 UserProfileDialog 中检查并修复
                 Box(
                     modifier = Modifier
                         .size(50.dp)
                         .clip(CircleShape)
-                        .background(Color(0xFFF5F5F5)) // 使用单一颜色
+                        .background(Color(0xFFF5F5F5))
                         .clickable { /* 如果有点击功能的话 */ },
                     contentAlignment = Alignment.Center
                 ) {
@@ -105,16 +100,6 @@ fun UserProfileDialog(
                     lineHeight = 20.sp,
                     modifier = Modifier.fillMaxWidth()
                 )
-
-//                Spacer(modifier = Modifier.height(16.dp))
-
-//                // 添加编辑提示
-//                Text(
-//                    text = "提示：点击下方按钮可编辑资料",
-//                    fontSize = 12.sp,
-//                    color = Color(0xFF7F8C8D),
-//                    modifier = Modifier.fillMaxWidth()
-//                )
             }
         },
         confirmButton = {
@@ -122,12 +107,14 @@ fun UserProfileDialog(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                TextButton(onClick = onDismiss) {
+                TextButton(
+                    onClick = onDismiss  // 关闭按钮直接返回到个人主页
+                ) {
                     Text("关闭", color = Color(0xFF7F8C8D))
                 }
 
                 Button(
-                    onClick = onEdit,
+                    onClick = onEdit,    // 编辑按钮进入编辑对话框
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color(0xFFC6A9F8)
                     )

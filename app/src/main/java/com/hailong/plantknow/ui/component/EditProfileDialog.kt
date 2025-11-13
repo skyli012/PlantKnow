@@ -30,7 +30,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -55,7 +54,7 @@ import com.hailong.plantknow.utils.ImageSaver
 @Composable
 fun EditProfileDialog(
     userProfile: UserProfile?,
-    onDismiss: () -> Unit,
+    onDismiss: () -> Unit,  // 这个用于返回到资料对话框
     onSave: (String, String, String) -> Unit
 ) {
     var name by remember { mutableStateOf(userProfile?.name ?: "") }
@@ -66,38 +65,32 @@ fun EditProfileDialog(
     val context = LocalContext.current
     val imageSaver = remember { ImageSaver(context) }
 
-    // 直接在这里创建图片选择器
     val coroutineScope = rememberCoroutineScope()
 
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri ->
         uri?.let { selectedUri ->
-            // 在回调里使用协程做异步保存，避免在非 Composable lambda 中调用 LaunchedEffect
             coroutineScope.launch {
                 isLoading = true
                 try {
-                    // 在 IO 线程执行保存操作
                     val savedImagePath = withContext(Dispatchers.IO) {
                         imageSaver.saveAvatarToInternalStorage(selectedUri)
                     }
                     savedImagePath?.let { path ->
                         avatarUri = path
-                        // 删除旧的头像文件（如果是内部存储路径）
+                        // 删除旧的头像文件
                         userProfile?.avatarUri?.let { oldPath ->
                             if (oldPath.isNotEmpty() && oldPath.startsWith("/")) {
-                                // 删除操作也可以在 IO 线程，但这里 deleteOldAvatar 已在 ImageSaver 中处理线程
                                 imageSaver.deleteOldAvatar(oldPath)
                             }
                         }
                         println("头像保存成功: $path")
                     } ?: run {
-                        // 如果保存失败，使用临时URI
                         avatarUri = selectedUri.toString()
                         println("头像保存失败，使用临时URI")
                     }
                 } catch (e: Exception) {
-                    // 如果异常，使用临时URI
                     avatarUri = selectedUri.toString()
                     println("保存过程中出现异常: ${e.message}")
                 } finally {
@@ -108,7 +101,7 @@ fun EditProfileDialog(
     }
 
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = onDismiss,  // 点击空白处或返回键返回到资料对话框
         containerColor = Color.White,
         shape = RoundedCornerShape(16.dp),
         title = {
@@ -138,13 +131,11 @@ fun EditProfileDialog(
                     contentAlignment = Alignment.Center
                 ) {
                     if (isLoading) {
-                        // 加载中显示进度指示器
                         CircularProgressIndicator(
                             modifier = Modifier.size(30.dp),
                             color = Color(0xFF4CAF50)
                         )
                     } else if (avatarUri.isNotEmpty() && avatarUri.startsWith("/")) {
-                        // 显示保存的内部存储图片
                         val imageFile = imageSaver.getImageFileFromPath(avatarUri)
                         if (imageSaver.isImageFileExists(avatarUri)) {
                             AsyncImage(
@@ -156,7 +147,6 @@ fun EditProfileDialog(
                                 contentScale = ContentScale.Crop
                             )
                         } else {
-                            // 文件不存在，显示默认图标
                             Icon(
                                 imageVector = Icons.Default.Person,
                                 contentDescription = "用户头像",
@@ -165,7 +155,6 @@ fun EditProfileDialog(
                             )
                         }
                     } else if (avatarUri.isNotEmpty()) {
-                        // 临时URI，直接显示
                         AsyncImage(
                             model = avatarUri,
                             contentDescription = "用户头像",
@@ -175,7 +164,6 @@ fun EditProfileDialog(
                             contentScale = ContentScale.Crop
                         )
                     } else {
-                        // 没有头像
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
@@ -253,7 +241,7 @@ fun EditProfileDialog(
                 horizontalArrangement = Arrangement.End
             ) {
                 TextButton(
-                    onClick = onDismiss,
+                    onClick = onDismiss,  // 取消按钮返回到资料对话框
                     enabled = !isLoading
                 ) {
                     Text("取消", color = Color(0xFF7F8C8D))
@@ -267,7 +255,6 @@ fun EditProfileDialog(
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color(0xFFC6A9F8)
                     )
-
                 ) {
                     Text("保存")
                 }

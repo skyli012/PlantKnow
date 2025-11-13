@@ -27,9 +27,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.foundation.clickable
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -56,22 +53,15 @@ fun UserInfoCard(
         factory = UserProfileViewModelFactory(LocalContext.current)
     )
     val userProfile by userProfileViewModel.userProfile.collectAsState(initial = null)
+
+    // 使用简单的布尔状态管理
     val showProfileDialog = remember { mutableStateOf(false) }
+    val showEditDialog = remember { mutableStateOf(false) }
+
     val favoriteCount by favoriteViewModel.favoriteCount.collectAsState()
     val recognitionCount by userStatsViewModel.recognitionCount.collectAsState(initial = 128)
     val learningDays by userStatsViewModel.learningDays.collectAsState(initial = 42)
-    val showEditDialog = remember { mutableStateOf(false) }
 
-    // 添加调试信息
-    LaunchedEffect(userProfile) {
-        println("=== 用户资料调试信息 ===")
-        println("userProfile: $userProfile")
-        println("userProfile?.name: ${userProfile?.name}")
-        println("userProfile?.bio: ${userProfile?.bio}")
-        println("userProfile?.avatarUri: ${userProfile?.avatarUri}")
-        println("avatarUri 是否为空: ${userProfile?.avatarUri.isNullOrEmpty()}")
-        println("=== 调试结束 ===")
-    }
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -89,7 +79,7 @@ fun UserInfoCard(
                 modifier = Modifier
                     .size(80.dp)
                     .clip(CircleShape)
-                    .background(Color(0xFFF5F5F5)) // 简单的灰色背景
+                    .background(Color(0xFFF5F5F5))
                     .clickable { showProfileDialog.value = true },
                 contentAlignment = Alignment.Center
             ) {
@@ -137,13 +127,16 @@ fun UserInfoCard(
             }
         }
 
-        // 展示弹窗
-        if (showProfileDialog.value) {
+        // 展示弹窗 - 使用条件判断确保正确的层级
+        if (showProfileDialog.value && !showEditDialog.value) {
             UserProfileDialog(
                 userProfile = userProfile,
-                onDismiss = { showProfileDialog.value = false },
-                onEdit = {
+                onDismiss = {
+                    // 直接返回到个人主页
                     showProfileDialog.value = false
+                },
+                onEdit = {
+                    // 进入编辑对话框，但不关闭资料对话框
                     showEditDialog.value = true
                 }
             )
@@ -153,15 +146,17 @@ fun UserInfoCard(
         if (showEditDialog.value) {
             EditProfileDialog(
                 userProfile = userProfile,
-                onDismiss = { showEditDialog.value = false },
+                onDismiss = {
+                    // 只能返回到资料对话框，不能直接到个人主页
+                    showEditDialog.value = false
+                },
                 onSave = { name, bio, avatarUri ->
                     userProfileViewModel.updateUserInfo(name, bio, avatarUri)
+                    // 保存后返回到资料对话框
                     showEditDialog.value = false
                 }
             )
         }
-
-
 
         Spacer(modifier = Modifier.height(20.dp))
 
@@ -171,17 +166,17 @@ fun UserInfoCard(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             BoxedStatItem(
-                count = recognitionCount.toString(), // 从Room数据库读取
+                count = recognitionCount.toString(),
                 label = "识别次数",
                 modifier = Modifier.weight(1f)
             )
             BoxedStatItem(
-                count = learningDays.toString(), // 从Room数据库读取
+                count = learningDays.toString(),
                 label = "学习天数",
                 modifier = Modifier.weight(1f)
             )
             BoxedStatItem(
-                count = favoriteCount.toString(), // ✅ 使用数据库实时值
+                count = favoriteCount.toString(),
                 label = "收藏数量",
                 modifier = Modifier.weight(1f)
             )
