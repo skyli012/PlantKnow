@@ -63,7 +63,7 @@ fun CommunityScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(
-                        color = Color.White,
+                        Color(0xFFE9F0F8),
                         shape = RoundedCornerShape(16.dp)
                     )
             ) {

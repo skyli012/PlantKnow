@@ -108,9 +108,8 @@ fun MainScreen(
     var showProfile by remember { mutableStateOf(false) }
     var showCommunity by remember { mutableStateOf(false) }
 
-    // 滑动启用状态
-    var swipeEnabled by remember { mutableStateOf(true) }
-    var communitySwipeEnabled by remember { mutableStateOf(true) }
+    // 滑动启用状态 - 简化管理
+    var isSwipeEnabled by remember { mutableStateOf(true) }
 
     // 权限相关状态
     var showCameraPermissionDialog by remember { mutableStateOf(false) }
@@ -136,6 +135,15 @@ fun MainScreen(
     val hasRecognitionResult = remember {
         derivedStateOf {
             uiState.plantWithDetails != null || uiState.result != null || uiState.error != null
+        }
+    }
+
+    // 判断是否在三个主页面之间（个人主页、主页面、社区页面）
+    val isOnMainThreeScreens = remember {
+        derivedStateOf {
+            // 在个人主页、主页面、社区页面之间可以滑动
+            // 只有在显示识别结果或加载中时禁用滑动
+            !hasRecognitionResult.value && !uiState.isLoading && isSwipeEnabled
         }
     }
 
@@ -203,9 +211,9 @@ fun MainScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .pointerInput(uiState.isLoading, hasRecognitionResult.value, showProfile, showCommunity, swipeEnabled, communitySwipeEnabled) {
-                    // 根据滑动启用状态决定是否启用滑动
-                    if (!swipeEnabled && !communitySwipeEnabled) return@pointerInput
+                .pointerInput(isOnMainThreeScreens.value) {
+                    // 只有在三个主页面之间才允许滑动
+                    if (!isOnMainThreeScreens.value) return@pointerInput
 
                     detectHorizontalDragGestures(
                         onDragEnd = {
@@ -215,15 +223,13 @@ fun MainScreen(
 
                                 when {
                                     // 向右滑动显示个人主页
-                                    currentOffset > threshold && !showProfile && !showCommunity &&
-                                            !hasRecognitionResult.value && !uiState.isLoading -> {
+                                    currentOffset > threshold && !showProfile -> {
                                         slideOffset.animateTo(maxSlideOffsetPx, animationSpec = tween(300))
                                         showProfile = true
                                         showCommunity = false
                                     }
                                     // 向左滑动显示社区
-                                    currentOffset < -threshold && !showCommunity && !showProfile &&
-                                            !hasRecognitionResult.value && !uiState.isLoading -> {
+                                    currentOffset < -threshold && !showCommunity -> {
                                         slideOffset.animateTo(-maxSlideOffsetPx, animationSpec = tween(300))
                                         showCommunity = true
                                         showProfile = false
@@ -250,10 +256,6 @@ fun MainScreen(
                             }
                         }
                     ) { change, dragAmount ->
-                        if (hasRecognitionResult.value || uiState.isLoading) {
-                            return@detectHorizontalDragGestures
-                        }
-
                         val newOffset = when {
                             showProfile -> (slideOffset.value + dragAmount).coerceIn(0f, maxSlideOffsetPx)
                             showCommunity -> (slideOffset.value + dragAmount).coerceIn(-maxSlideOffsetPx, 0f)
@@ -287,7 +289,7 @@ fun MainScreen(
                             }
                         },
                         onSwipeEnabledChange = { enabled ->
-                            communitySwipeEnabled = enabled
+                            isSwipeEnabled = enabled
                         }
                     )
                 }
@@ -312,7 +314,7 @@ fun MainScreen(
                             }
                         },
                         onSwipeEnabledChange = { enabled ->
-                            swipeEnabled = enabled
+                            isSwipeEnabled = enabled
                         }
                     )
                 }
@@ -392,6 +394,8 @@ fun MainScreen(
         )
     }
 }
+
+// MainContent 函数保持不变...
 
 @Composable
 private fun MainContent(
