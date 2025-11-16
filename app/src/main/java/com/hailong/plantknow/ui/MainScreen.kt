@@ -9,7 +9,9 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
@@ -38,6 +40,10 @@ import com.hailong.plantknow.repository.FavoriteRepository
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import com.hailong.plantknow.model.FavoritePlant
 import com.hailong.plantknow.ui.component.ErrorCard
 import com.hailong.plantknow.ui.component.LoadingContent
@@ -407,17 +413,17 @@ private fun MainContent(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 20.dp, vertical = 16.dp)
+                .padding(horizontal = 20.dp)
         ) {
-            // 顶部区域 - 用户图标在左，社区图标在右
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 24.dp)
-            ) {
-                // 用户图标 - 只在初始状态显示
-                if (uiState.selectedImage == null && !uiState.isLoading && !hasRecognitionResult) {
+            // 顶部区域 - 只在初始状态显示
+            if (uiState.selectedImage == null && !uiState.isLoading && !hasRecognitionResult) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 16.dp)
+                ) {
+                    // 用户图标
                     IconButton(
                         onClick = onUserIconClick,
                         modifier = Modifier
@@ -428,51 +434,40 @@ private fun MainContent(
                             )
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Person,
+                            painter = painterResource(id = R.drawable.home_user),
                             contentDescription = "个人主页",
                             tint = Color(0xFF364858),
                             modifier = Modifier.size(24.dp)
                         )
                     }
-                } else {
-                    // 占位，保持布局平衡
-                    Spacer(modifier = Modifier.size(48.dp))
-                }
 
-                Spacer(modifier = Modifier.weight(1f))
+                    Spacer(modifier = Modifier.weight(1f))
 
-                // 社区图标 - 只在初始状态显示
-                if (uiState.selectedImage == null && !uiState.isLoading && !hasRecognitionResult) {
-                    IconButton(
-                        onClick = onCommunityIconClick,
+                    // PlantKnow 文字
+                    Text(
+                        text = "PlantKnow",
+                        color = Color(0xFF364858),
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
                         modifier = Modifier
-                            .size(48.dp)
-                            .background(
-                                color = Color(0xFFE9F0F8).copy(alpha = 0.1f),
-                                shape = RoundedCornerShape(12.dp)
-                            )
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_community),
-                            contentDescription = "交流社区",
-                            tint = Color(0xFF364858),
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                } else {
-                    // 占位，保持布局平衡
-                    Spacer(modifier = Modifier.size(48.dp))
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null
+                            ) {
+                                onCommunityIconClick()
+                            }
+                            .padding(vertical = 8.dp, horizontal = 12.dp)
+                    )
                 }
             }
 
-            // ... 其余代码保持不变 ...
             // 图片预览区域
             if (uiState.selectedImage != null) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
                         .wrapContentHeight()
-                        .padding(bottom = 20.dp)
+                        .padding(top = 30.dp , bottom = 20.dp)
                 ) {
                     when (val image = uiState.selectedImage) {
                         is Bitmap -> {
@@ -560,17 +555,18 @@ private fun MainContent(
             if (uiState.selectedImage == null || hasRecognitionResult) {
                 Row(
                     modifier = Modifier
-                        .fillMaxWidth(),
+                        .fillMaxWidth()
+                        .padding(bottom = 24.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(
                         onClick = { pickImageLauncher.launch("image/*") },
                         modifier = Modifier
                             .weight(1f)
-                            .height(64.dp)
+                            .height(40.dp)
                     ) {
                         Icon(
-                            painter = painterResource(id = R.drawable.ic_gallery),
+                            painter = painterResource(id = R.drawable.home_photo),
                             contentDescription = "相册",
                             tint = Color(0xFF364858)
                         )
@@ -582,10 +578,10 @@ private fun MainContent(
                         onClick = onTakePictureClick,
                         modifier = Modifier
                             .weight(1f)
-                            .height(64.dp)
+                            .height(28.dp)
                     ) {
                         Icon(
-                            painter = painterResource(id = R.drawable.ic_camera),
+                            painter = painterResource(id = R.drawable.home_camera),
                             contentDescription = "拍照",
                             tint = Color(0xFF364858)
                         )

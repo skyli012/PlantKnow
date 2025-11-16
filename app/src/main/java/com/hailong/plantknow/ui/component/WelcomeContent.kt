@@ -60,7 +60,7 @@ fun WelcomeContent() {
             )
 
             Text(
-                text = "学习与探索。",
+                text = "开始你的绿色发现之旅吧",
                 color = Color(0xFF666666),
                 fontSize = 12.sp,
                 fontFamily = FontFamily.Serif,
