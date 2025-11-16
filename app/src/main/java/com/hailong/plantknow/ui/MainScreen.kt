@@ -46,6 +46,7 @@ import com.hailong.plantknow.ui.component.PermissionExplanationDialog
 import com.hailong.plantknow.ui.component.PlantBasicInfoWithStickyHeader
 import com.hailong.plantknow.ui.component.PlantDetailsWithStickyHeader
 import com.hailong.plantknow.ui.component.WelcomeContent
+import com.hailong.plantknow.ui.screen.CommunityScreen
 import com.hailong.plantknow.ui.screen.FavoriteDetailScreen
 import com.hailong.plantknow.ui.screen.FavoriteListScreen
 import com.hailong.plantknow.ui.screen.ProfileScreen
@@ -97,10 +98,13 @@ fun MainScreen(
         )
     )
 
-    // 页面状态 - 只保留个人主页显示状态
+    // 页面状态
     var showProfile by remember { mutableStateOf(false) }
-    // 添加滑动启用状态
+    var showCommunity by remember { mutableStateOf(false) }
+
+    // 滑动启用状态
     var swipeEnabled by remember { mutableStateOf(true) }
+    var communitySwipeEnabled by remember { mutableStateOf(true) }
 
     // 权限相关状态
     var showCameraPermissionDialog by remember { mutableStateOf(false) }
@@ -113,11 +117,14 @@ fun MainScreen(
     val slideOffset = remember { Animatable(0f) }
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
     val maxSlideOffsetPx = with(LocalDensity.current) { screenWidth.toPx() }
-    val maxSlideOffset = maxSlideOffsetPx
     val coroutineScope = rememberCoroutineScope()
 
-    // 计算进度 (0f - 1f)
-    val progress by remember { derivedStateOf { slideOffset.value / maxSlideOffset } }
+    // 计算滑动进度 (-1f 到 1f)
+    val progress by remember {
+        derivedStateOf {
+            slideOffset.value / maxSlideOffsetPx
+        }
+    }
 
     // 是否显示识别结果
     val hasRecognitionResult = remember {
@@ -126,14 +133,19 @@ fun MainScreen(
         }
     }
 
-    // 处理返回键 - 只处理个人主页和识别结果
-    BackHandler(enabled = showProfile || hasRecognitionResult.value) {
+    // 处理返回键
+    BackHandler(enabled = showProfile || showCommunity || hasRecognitionResult.value) {
         when {
             showProfile -> {
-                // 如果正在显示个人主页，先滑动回主页再关闭
                 coroutineScope.launch {
                     slideOffset.animateTo(0f, animationSpec = tween(300))
                     showProfile = false
+                }
+            }
+            showCommunity -> {
+                coroutineScope.launch {
+                    slideOffset.animateTo(0f, animationSpec = tween(300))
+                    showCommunity = false
                 }
             }
             hasRecognitionResult.value -> {
@@ -185,35 +197,48 @@ fun MainScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .pointerInput(uiState.isLoading, hasRecognitionResult.value, showProfile, swipeEnabled) {
-                    // 根据 swipeEnabled 决定是否启用滑动
-                    if (!swipeEnabled) return@pointerInput
+                .pointerInput(uiState.isLoading, hasRecognitionResult.value, showProfile, showCommunity, swipeEnabled, communitySwipeEnabled) {
+                    // 根据滑动启用状态决定是否启用滑动
+                    if (!swipeEnabled && !communitySwipeEnabled) return@pointerInput
 
                     detectHorizontalDragGestures(
                         onDragEnd = {
                             coroutineScope.launch {
                                 val currentOffset = slideOffset.value
-                                val threshold = maxSlideOffset * 0.1f
+                                val threshold = maxSlideOffsetPx * 0.1f // 20% 阈值
 
-                                if (currentOffset > threshold &&
-                                    !showProfile &&
-                                    !hasRecognitionResult.value &&
-                                    !uiState.isLoading) {
-                                    // 向右滑动超过阈值，切换到个人主页
-                                    slideOffset.animateTo(maxSlideOffset, animationSpec = tween(145))
-                                    showProfile = true
-                                }
-                                else if (currentOffset < (maxSlideOffset - threshold) && showProfile) {
-                                    // 向左滑动超过阈值，切换回主页面
-                                    slideOffset.animateTo(0f, animationSpec = tween(145))
-                                    showProfile = false
-                                }
-                                else {
-                                    // 滑动距离不足，回到原位置
-                                    if (showProfile) {
-                                        slideOffset.animateTo(maxSlideOffset, animationSpec = tween(300))
-                                    } else {
+                                when {
+                                    // 向右滑动显示个人主页
+                                    currentOffset > threshold && !showProfile && !showCommunity &&
+                                            !hasRecognitionResult.value && !uiState.isLoading -> {
+                                        slideOffset.animateTo(maxSlideOffsetPx, animationSpec = tween(300))
+                                        showProfile = true
+                                        showCommunity = false
+                                    }
+                                    // 向左滑动显示社区
+                                    currentOffset < -threshold && !showCommunity && !showProfile &&
+                                            !hasRecognitionResult.value && !uiState.isLoading -> {
+                                        slideOffset.animateTo(-maxSlideOffsetPx, animationSpec = tween(300))
+                                        showCommunity = true
+                                        showProfile = false
+                                    }
+                                    // 从个人主页滑回主页
+                                    currentOffset < (maxSlideOffsetPx - threshold) && showProfile -> {
                                         slideOffset.animateTo(0f, animationSpec = tween(300))
+                                        showProfile = false
+                                    }
+                                    // 从社区滑回主页
+                                    currentOffset > (-maxSlideOffsetPx + threshold) && showCommunity -> {
+                                        slideOffset.animateTo(0f, animationSpec = tween(300))
+                                        showCommunity = false
+                                    }
+                                    else -> {
+                                        // 滑动距离不足，回到原位置
+                                        when {
+                                            showProfile -> slideOffset.animateTo(maxSlideOffsetPx, animationSpec = tween(300))
+                                            showCommunity -> slideOffset.animateTo(-maxSlideOffsetPx, animationSpec = tween(300))
+                                            else -> slideOffset.animateTo(0f, animationSpec = tween(300))
+                                        }
                                     }
                                 }
                             }
@@ -224,15 +249,11 @@ fun MainScreen(
                         }
 
                         val newOffset = when {
-                            showProfile -> {
-                                (slideOffset.value + dragAmount).coerceIn(0f, maxSlideOffset)
-                            }
-                            else -> {
-                                (slideOffset.value + dragAmount).coerceIn(0f, maxSlideOffset)
-                            }
+                            showProfile -> (slideOffset.value + dragAmount).coerceIn(0f, maxSlideOffsetPx)
+                            showCommunity -> (slideOffset.value + dragAmount).coerceIn(-maxSlideOffsetPx, 0f)
+                            else -> (slideOffset.value + dragAmount).coerceIn(-maxSlideOffsetPx, maxSlideOffsetPx)
                         }
 
-                        // 使用 snapTo 而不是直接赋值
                         coroutineScope.launch {
                             slideOffset.snapTo(newOffset)
                         }
@@ -241,20 +262,44 @@ fun MainScreen(
         ) {
             // ========== 页面渲染部分 ==========
 
-            // 个人主页容器 - 从左侧滑入
+            // 1. 社区页面容器 - 从右侧滑入
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .graphicsLayer {
-                        translationX = -maxSlideOffset + slideOffset.value
+                        // 修复：社区页面在右侧，向左滑动时进入
+                        translationX = maxSlideOffsetPx + slideOffset.value
                     }
             ) {
-                // 只要滑动进度大于1%就显示个人主页
-                if (progress > 0.01f) {
-                    // 个人主页 - 收藏功能完全由 ProfileScreen 内部管理
+                // 滑动超过10%才显示社区页面
+                if (progress < 0f) {
+                    CommunityScreen(
+                        onBackClick = {
+                            coroutineScope.launch {
+                                slideOffset.animateTo(0f, animationSpec = tween(300))
+                                showCommunity = false
+                            }
+                        },
+                        onSwipeEnabledChange = { enabled ->
+                            communitySwipeEnabled = enabled
+                        }
+                    )
+                }
+            }
+
+            // 2. 个人主页容器 - 从左侧滑入
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        // 修复：个人主页在左侧，向右滑动时进入
+                        translationX = -maxSlideOffsetPx + slideOffset.value
+                    }
+            ) {
+                // 滑动超过30%才显示个人主页
+                if (progress > 0f) {
                     ProfileScreen(
                         onBackClick = {
-                            // 返回按钮点击：动画滑动回主页面
                             coroutineScope.launch {
                                 slideOffset.animateTo(0f, animationSpec = tween(300))
                                 showProfile = false
@@ -267,7 +312,7 @@ fun MainScreen(
                 }
             }
 
-            // 主页面容器 - 向右移动并逐渐消失
+            // 3. 主页面容器 - 跟随滑动移动
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -290,37 +335,21 @@ fun MainScreen(
                     hasRecognitionResult = hasRecognitionResult.value,
                     paddingValues = paddingValues,
                     onUserIconClick = {
-                        // 用户图标点击：显示个人主页
                         coroutineScope.launch {
-                            slideOffset.animateTo(maxSlideOffset, animationSpec = tween(300))
+                            slideOffset.animateTo(maxSlideOffsetPx, animationSpec = tween(300))
                             showProfile = true
+                            showCommunity = false
+                        }
+                    },
+                    onCommunityIconClick = {
+                        coroutineScope.launch {
+                            slideOffset.animateTo(-maxSlideOffsetPx, animationSpec = tween(300))
+                            showCommunity = true
+                            showProfile = false
                         }
                     }
                 )
             }
-
-            // 边缘检测区域
-            Box(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .width(20.dp)
-                    .pointerInput(Unit) {
-                        detectHorizontalDragGestures { change, dragAmount ->
-                            // 只在滑动启用时检测边缘手势
-                            if (swipeEnabled && dragAmount > 0 && !showProfile && !hasRecognitionResult.value && !uiState.isLoading) {
-                                coroutineScope.launch {
-                                    val newOffset = (slideOffset.value + dragAmount).coerceIn(0f, maxSlideOffset)
-                                    slideOffset.snapTo(newOffset)
-
-                                    if (newOffset > maxSlideOffset * 0.3f) {
-                                        slideOffset.animateTo(maxSlideOffset, animationSpec = tween(300))
-                                        showProfile = true
-                                    }
-                                }
-                            }
-                        }
-                    }
-            )
         }
     }
 
@@ -366,7 +395,8 @@ private fun MainContent(
     onTakePictureClick: () -> Unit,
     hasRecognitionResult: Boolean,
     paddingValues: PaddingValues,
-    onUserIconClick: () -> Unit
+    onUserIconClick: () -> Unit,
+    onCommunityIconClick: () -> Unit
 ) {
     Box(
         modifier = Modifier
@@ -379,14 +409,14 @@ private fun MainContent(
                 .fillMaxSize()
                 .padding(horizontal = 20.dp, vertical = 16.dp)
         ) {
-            // 顶部区域 - 只显示用户图标在左侧
+            // 顶部区域 - 用户图标在左，社区图标在右
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 24.dp)
             ) {
-                // 用户图标 - 只在初始状态显示（没有选择图片、没有加载、没有识别结果）
+                // 用户图标 - 只在初始状态显示
                 if (uiState.selectedImage == null && !uiState.isLoading && !hasRecognitionResult) {
                     IconButton(
                         onClick = onUserIconClick,
@@ -404,13 +434,39 @@ private fun MainContent(
                             modifier = Modifier.size(24.dp)
                         )
                     }
+                } else {
+                    // 占位，保持布局平衡
+                    Spacer(modifier = Modifier.size(48.dp))
                 }
 
-                // 占位空间，保持布局平衡
                 Spacer(modifier = Modifier.weight(1f))
+
+                // 社区图标 - 只在初始状态显示
+                if (uiState.selectedImage == null && !uiState.isLoading && !hasRecognitionResult) {
+                    IconButton(
+                        onClick = onCommunityIconClick,
+                        modifier = Modifier
+                            .size(48.dp)
+                            .background(
+                                color = Color(0xFFE9F0F8).copy(alpha = 0.1f),
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_community),
+                            contentDescription = "交流社区",
+                            tint = Color(0xFF364858),
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                } else {
+                    // 占位，保持布局平衡
+                    Spacer(modifier = Modifier.size(48.dp))
+                }
             }
 
-            // 图片预览区域（仅在选择了图片时显示）
+            // ... 其余代码保持不变 ...
+            // 图片预览区域
             if (uiState.selectedImage != null) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -418,7 +474,6 @@ private fun MainContent(
                         .wrapContentHeight()
                         .padding(bottom = 20.dp)
                 ) {
-                    // 显示选中的图片
                     when (val image = uiState.selectedImage) {
                         is Bitmap -> {
                             Image(
@@ -459,7 +514,7 @@ private fun MainContent(
                 }
             }
 
-            // 中部：主要文本展示区域 - 使用Box包装以便添加毛玻璃效果
+            // 中部：主要文本展示区域
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -471,34 +526,15 @@ private fun MainContent(
                         .padding(5.dp)
                 ) {
                     when {
-                        // 未选择图片时显示欢迎文本
-                        uiState.selectedImage == null -> {
-                            WelcomeContent()
-                        }
-
-                        // 加载中显示加载指示器
-                        uiState.isLoading -> {
-                            LoadingContent(uiState.recognitionStep)
-                        }
-
-                        // 优先显示完整识别结果（百度+阿里云）
-                        uiState.plantWithDetails != null -> {
-                            PlantDetailsWithStickyHeader(
-                                plantWithDetails = uiState.plantWithDetails!!,
-                                favoriteViewModel = favoriteViewModel,
-                                selectedImage = uiState.selectedImage
-                            )
-                        }
-
-                        // 显示仅百度识别结果（兼容旧版本）
-                        uiState.result != null -> {
-                            PlantBasicInfoWithStickyHeader(plant = uiState.result!!)
-                        }
-
-                        // 显示错误信息
-                        uiState.error != null -> {
-                            ErrorCard(message = uiState.error!!)
-                        }
+                        uiState.selectedImage == null -> WelcomeContent()
+                        uiState.isLoading -> LoadingContent(uiState.recognitionStep)
+                        uiState.plantWithDetails != null -> PlantDetailsWithStickyHeader(
+                            plantWithDetails = uiState.plantWithDetails!!,
+                            favoriteViewModel = favoriteViewModel,
+                            selectedImage = uiState.selectedImage
+                        )
+                        uiState.result != null -> PlantBasicInfoWithStickyHeader(plant = uiState.result!!)
+                        uiState.error != null -> ErrorCard(message = uiState.error!!)
                     }
                 }
 
