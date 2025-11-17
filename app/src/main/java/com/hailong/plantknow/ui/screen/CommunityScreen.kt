@@ -86,14 +86,26 @@ fun TopBar(selectedTab: String, onTabSelected: (String) -> Unit) {
                 modifier = Modifier.weight(1f)
             ) {
                 listOf("发现", "关注").forEach { tab ->
-                    Text(
-                        text = tab,
-                        fontSize = 20.sp,
-                        fontWeight = if (selectedTab == tab) FontWeight.Bold else FontWeight.Normal,
-                        modifier = Modifier
-                            .padding(horizontal = 20.dp)
-                            .clickable { onTabSelected(tab) }
-                    )
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.clickable { onTabSelected(tab) }
+                    ) {
+                        Text(
+                            text = tab,
+                            fontSize = 20.sp,
+                            fontWeight = if (selectedTab == tab) FontWeight.Bold else FontWeight.Normal,
+                            modifier = Modifier
+                                .padding(horizontal = 20.dp)
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        if (selectedTab == tab)
+                            Box(
+                                modifier = Modifier
+                                    .height(2.dp)
+                                    .width(40.dp)
+                                    .background(Color(0xFFFF9800))
+                            )
+                    }
                 }
             }
 

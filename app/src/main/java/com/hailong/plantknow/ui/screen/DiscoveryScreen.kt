@@ -131,14 +131,6 @@ fun DiscoveryScreen(
     }
 }
 
-@Composable
-fun RecommendedContent(
-    onSwipeToHome: () -> Unit = {}
-) {
-    WaterfallContent()
-}
-
-
 
 // 修改 SecondaryTabs，添加tabs列表参数
 @Composable
@@ -157,14 +149,6 @@ fun SecondaryTabs(selected: String, tabs: List<String>, onTabSelected: (String) 
                     fontSize = 16.sp,
                     color = if (selected == tab) Color.Black else Color.Gray
                 )
-                Spacer(Modifier.height(4.dp))
-                if (selected == tab)
-                    Box(
-                        modifier = Modifier
-                            .height(2.dp)
-                            .width(40.dp)
-                            .background(Color.Black)
-                    )
             }
         }
     }
