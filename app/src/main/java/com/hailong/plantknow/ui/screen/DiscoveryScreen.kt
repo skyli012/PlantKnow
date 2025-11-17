@@ -2,6 +2,7 @@ package com.hailong.plantknow.ui.screen
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -69,27 +70,34 @@ fun DiscoveryScreen(
         modifier = Modifier
             .fillMaxSize()
             .pointerInput(Unit) {
-                detectHorizontalDragGestures { change, dragAmount ->
-                    when {
-                        // 从左往右滑动：返回上一个页面
-                        dragAmount > 40 -> {
-                            when (pagerState.currentPage) {
-                                0 -> onSwipeToHome() // 推荐页面返回主页
-                                1 -> triggerPageChange = 0 // 美图页面返回推荐
-                                2 -> triggerPageChange = 1 // 知识页面返回美图
+                var totalDrag = 0f
+
+                detectDragGestures(
+                    onDragStart = { totalDrag = 0f },
+                    onDrag = { change, dragAmount ->
+                        totalDrag += dragAmount.x   // 拖动方向：右为正、左为负
+                    },
+                    onDragEnd = {
+                        when {
+                            totalDrag > 80 -> { //向右滑
+                                when (pagerState.currentPage) {
+                                    0 -> onSwipeToHome()
+                                    1 -> triggerPageChange = 0
+                                    2 -> triggerPageChange = 1
+                                }
                             }
-                        }
-                        // 从右往左滑动：前往下一个页面
-                        dragAmount < -40 -> {
-                            when (pagerState.currentPage) {
-                                0 -> triggerPageChange = 1 // 推荐页面前往美图
-                                1 -> triggerPageChange = 2 // 美图页面前往知识
-                                2 -> onSwipeToFollowing() // 知识页面前往关注
+                            totalDrag < -80 -> { //向左滑
+                                when (pagerState.currentPage) {
+                                    0 -> triggerPageChange = 1
+                                    1 -> triggerPageChange = 2
+                                    2 -> onSwipeToFollowing()
+                                }
                             }
                         }
                     }
-                }
+                )
             }
+
     ) {
         Column(
             modifier = Modifier.fillMaxSize()
