@@ -33,7 +33,7 @@ fun PlantBasicInfoWithStickyHeader(plant: com.hailong.plantknow.model.PlantResul
         modifier = Modifier
             .fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFFE9F0F8)
+            containerColor = Color.White
         )
     ) {
         Column(

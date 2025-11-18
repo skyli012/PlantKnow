@@ -41,7 +41,7 @@ fun SplashScreen(
     val exitAlpha = remember { Animatable(1f) }
 
     val systemUiController = rememberSystemUiController()
-    val backgroundColor = Color(0xFFE9F0F8)
+    val backgroundColor = Color.White
 
     LaunchedEffect(Unit) {
         systemUiController.setStatusBarColor(

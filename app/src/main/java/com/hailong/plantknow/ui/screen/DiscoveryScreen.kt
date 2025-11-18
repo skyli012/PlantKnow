@@ -66,7 +66,7 @@ fun DiscoveryScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFE9F0F8))
+            .background(Color.White)
     ) {
         SecondaryTabs(
             selected = selectedTab,

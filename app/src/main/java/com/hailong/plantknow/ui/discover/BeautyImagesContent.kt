@@ -21,7 +21,7 @@ fun BeautyImagesContent() {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFE9F0F8)),
+            .background(Color.White),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {

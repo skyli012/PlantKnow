@@ -22,6 +22,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -32,6 +33,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
+import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import com.hailong.plantknow.ui.discover.PlantPost
 import com.hailong.plantknow.ui.discover.component.CommentSection
 import com.hailong.plantknow.ui.discover.component.TextDescriptionSection
@@ -53,6 +55,21 @@ fun PlantDetailScreen(
 ) {
     val isLiked = remember { mutableStateOf(false) }
     val commentText = remember { mutableStateOf("") }
+
+    val systemUiController = rememberSystemUiController()
+    val useDarkIcons = remember { mutableStateOf(true) }
+
+    SideEffect {
+        systemUiController.setStatusBarColor(
+            color = Color.White,
+            darkIcons = useDarkIcons.value
+        )
+        // 设置底部导航栏
+        systemUiController.setNavigationBarColor(
+            color = Color.White,
+            darkIcons = useDarkIcons.value
+        )
+    }
 
     Column(
         modifier = Modifier

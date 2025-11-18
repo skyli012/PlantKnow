@@ -23,10 +23,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.view.WindowCompat
-import com.hailong.plantknow.database.UserDatabase
 import com.hailong.plantknow.network.AuthHelper
 import com.hailong.plantknow.ui.MainScreen
-import com.hailong.plantknow.ui.screen.SplashScreen  // 导入您的SplashScreen
+import com.hailong.plantknow.ui.screen.SplashScreen
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -38,8 +37,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // 在 setContent 之前设置状态栏颜色
-        window.statusBarColor = Color(0xFFE9F0F8).toArgb()
-        window.navigationBarColor = Color(0xFFE9F0F8).toArgb()
+        window.statusBarColor = Color.White.toArgb()
+        window.navigationBarColor = Color.White.toArgb()
 
         // 如果需要亮色状态栏图标（深色文字）
         WindowCompat.getInsetsController(window, window.decorView).apply {
@@ -70,7 +69,7 @@ fun AppContent() {
     var showSplash by remember { mutableStateOf(true) }
     val splashAlpha = remember { Animatable(1f) }
     val mainScreenAlpha = remember { Animatable(0f) }
-    val backgroundColor = Color(0xFFE9F0F8)
+    val backgroundColor = Color.White
 
     // ✅ 新增：控制 MainScreen 是否真正可见
     var isMainScreenReady by remember { mutableStateOf(false) }

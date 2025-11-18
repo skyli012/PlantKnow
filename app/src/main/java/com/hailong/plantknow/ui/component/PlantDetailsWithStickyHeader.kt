@@ -1,7 +1,5 @@
 package com.hailong.plantknow.ui.component
 
-import android.net.Uri
-import android.graphics.Bitmap
 import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -26,7 +24,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hailong.plantknow.model.confidencePercent
 import com.hailong.plantknow.viewmodel.FavoriteViewModel
-import kotlin.math.log
 
 @Composable
 fun PlantDetailsWithStickyHeader(
@@ -42,7 +39,7 @@ fun PlantDetailsWithStickyHeader(
         modifier = Modifier
             .fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFFE9F0F8)
+            containerColor = Color.White
         )
     ) {
         Column(

@@ -21,6 +21,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -31,6 +32,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import com.hailong.plantknow.ui.discover.PlantPost
 
 @Composable
@@ -43,6 +45,21 @@ fun CommunityScreen(
     val pagerState = rememberPagerState(initialPage = 0, pageCount = { mainTabs.size })
     var selectedTab by remember { mutableStateOf(mainTabs[0]) }
     var triggerMainPageChange by remember { mutableStateOf<Int?>(null) }
+
+    val systemUiController = rememberSystemUiController()
+    val useDarkIcons = remember { mutableStateOf(true) }
+
+    SideEffect {
+        systemUiController.setStatusBarColor(
+            color = Color.White,
+            darkIcons = useDarkIcons.value
+        )
+        // 设置底部导航栏
+        systemUiController.setNavigationBarColor(
+            color = Color.White,
+            darkIcons = useDarkIcons.value
+        )
+    }
 
     // 监听主页面变化
     LaunchedEffect(pagerState.currentPage) {
@@ -60,8 +77,7 @@ fun CommunityScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFE9F0F8))
-//            .padding(horizontal = 12.dp)
+            .background(Color.White)
     ) {
         Spacer(Modifier.height(16.dp))
 
@@ -157,7 +173,7 @@ fun TopBar(selectedTab: String, onTabSelected: (String) -> Unit) {
             modifier = Modifier
                 .fillMaxWidth()
                 .height(1.dp)
-                .background(Color(0xFFDEE8EC))
+                .background(Color(0xFFE8E6E6))
         )
     }
 }

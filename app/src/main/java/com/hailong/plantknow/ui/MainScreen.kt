@@ -96,11 +96,16 @@ fun MainScreen(
 ) {
     // 系统UI控制器，用于设置状态栏颜色
     val systemUiController = rememberSystemUiController()
-    val bgColor1 = Color(0xFFE9F0F8) // 浅蓝色背景
+    val bgColor1 = Color.White
 
     // 设置状态栏颜色，并在组件销毁时清理
     DisposableEffect(Unit) {
         systemUiController.setStatusBarColor(
+            color = bgColor1,
+            darkIcons = true
+        )
+        // 设置底部导航栏
+        systemUiController.setNavigationBarColor(
             color = bgColor1,
             darkIcons = true
         )
@@ -239,7 +244,7 @@ fun MainScreen(
 
     // 使用Scaffold布局作为根容器
     Scaffold(
-        containerColor = Color(0xFFE9F0F8)
+        containerColor = Color.White
     ) { paddingValues ->
         Box(
             modifier = Modifier
@@ -453,11 +458,11 @@ private fun MainContent(
     paddingValues: PaddingValues,
     onUserIconClick: () -> Unit,
     onCommunityIconClick: () -> Unit
-) {
+) { 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFE9F0F8))
+            .background(Color.White)
             .padding(paddingValues)
     ) {
         Column(
@@ -479,7 +484,7 @@ private fun MainContent(
                         modifier = Modifier
                             .size(48.dp)
                             .background(
-                                color = Color(0xFFE9F0F8).copy(alpha = 0.1f),
+                                color = Color.White.copy(alpha = 0.1f),
                                 shape = RoundedCornerShape(12.dp)
                             )
                     ) {
@@ -593,8 +598,8 @@ private fun MainContent(
                             brush = Brush.verticalGradient(
                                 colors = listOf(
                                     Color.Transparent,
-                                    Color(0xFFE9F0F8).copy(alpha = 0.8f),
-                                    Color(0xFFE9F0F8).copy(alpha = 0.9f)
+                                    Color.White.copy(alpha = 0.8f),
+                                    Color.White.copy(alpha = 0.9f)
                                 )
                             )
                         )
