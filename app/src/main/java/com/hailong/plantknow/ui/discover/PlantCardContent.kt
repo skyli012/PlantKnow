@@ -3,6 +3,7 @@ package com.hailong.plantknow.ui.discover
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -35,7 +36,12 @@ fun PlantCardContent(
 ) {
     Column(
         modifier = Modifier
-            .background(Color.White, RoundedCornerShape(7.dp))
+            .background(Color.White)
+            .border(
+                width = 0.3.dp,
+                color = Color(0xFFF5F3F3), // 边框颜色，浅灰色
+                RoundedCornerShape(7.dp)
+            )
             .fillMaxWidth()
             .wrapContentHeight()
             .clickable { onItemClick(post) } // 添加点击事件
