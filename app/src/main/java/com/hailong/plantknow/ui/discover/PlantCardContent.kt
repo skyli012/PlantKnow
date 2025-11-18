@@ -19,21 +19,20 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
-import com.hailong.plantknow.ui.screen.PlantPost
 
 @Composable
 fun PlantCardContent(post: PlantPost) {
     Column(
         modifier = Modifier
-            .background(Color.White, RoundedCornerShape(16.dp))
+            .background(Color.White, RoundedCornerShape(7.dp))
             .fillMaxWidth()
             .wrapContentHeight()
-            .padding(10.dp)
     ) {
         Image(
             painter = rememberAsyncImagePainter(post.img),
@@ -41,26 +40,31 @@ fun PlantCardContent(post: PlantPost) {
             modifier = Modifier
                 .fillMaxWidth()
                 .height(post.randomHeight.dp)
-                .background(Color.LightGray, RoundedCornerShape(12.dp)),
+                .clip(RoundedCornerShape(7.dp, 7.dp, 0.dp, 0.dp))  // 左上, 右上, 右下, 左下
+                .background(Color.LightGray, RoundedCornerShape(7.dp, 7.dp, 0.dp, 0.dp)),
             contentScale = ContentScale.Crop
         )
-        Spacer(Modifier.height(6.dp))
-        Text(post.desc, fontSize = 14.sp, maxLines = 2)
-        Spacer(Modifier.height(4.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+        // 文本内容区域 - 添加左右和下边距
+        Column(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
         ) {
-            Text(post.author, color = Color.Gray, fontSize = 12.sp)
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    Icons.Default.Favorite,
-                    contentDescription = null,
-                    tint = Color(0xFFFF7B7B),
-                    modifier = Modifier.size(16.dp)
-                )
-                Text(post.likes.toString(), fontSize = 12.sp)
+            Text(post.desc, fontSize = 14.sp, maxLines = 2)
+            Spacer(Modifier.height(4.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(post.author, color = Color.Gray, fontSize = 12.sp)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Default.Favorite,
+                        contentDescription = null,
+                        tint = Color(0xFFFF7B7B),
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Text(post.likes.toString(), fontSize = 12.sp)
+                }
             }
         }
     }
