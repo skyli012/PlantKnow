@@ -3,7 +3,6 @@ package com.hailong.plantknow.ui.detail
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,20 +13,19 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -35,145 +33,101 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
 import com.hailong.plantknow.ui.discover.PlantPost
+import com.hailong.plantknow.ui.discover.component.CommentSection
+import com.hailong.plantknow.ui.discover.component.TextDescriptionSection
+
+// 评论数据类
+data class Comment(
+    val id: String,
+    val userAvatar: String,
+    val userName: String,
+    val content: String,
+    val publishTime: String,
+    val likes: Int
+)
 
 @Composable
 fun PlantDetailScreen(
     plantPost: PlantPost,
     onBackClick: () -> Unit
 ) {
+    val isLiked = remember { mutableStateOf(false) }
+    val commentText = remember { mutableStateOf("") }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.White)
             .verticalScroll(rememberScrollState())
     ) {
-        // 顶部图片区域
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(400.dp)
-        ) {
-            Image(
-                painter = rememberAsyncImagePainter(plantPost.img),
-                contentDescription = null,
-                modifier = Modifier
-                    .fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
+        // 顶部栏
+        TopAppBar(onBackClick = onBackClick)
 
-            // 返回按钮
-            IconButton(
-                onClick = onBackClick,
-                modifier = Modifier
-                    .statusBarsPadding()
-                    .padding(16.dp)
-                    .size(24.dp)
-                    .background(Color.White.copy(alpha = 0.8f), RoundedCornerShape(8.dp))
-                    .padding(4.dp)
-            ) {
-                Icon(
-                    Icons.Default.ArrowBack,
-                    contentDescription = "返回",
-                    tint = Color.Black
-                )
-            }
-        }
+        // 1. 图片展示板块
+        ImageDisplaySection(plantPost = plantPost)
 
-        // 内容区域
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            // 标题和描述
-            Text(
-                text = plantPost.desc,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black
-            )
+        // 2. 文本描述板块
+        TextDescriptionSection(
+            plantPost = plantPost,
+            isLiked = isLiked
+        )
 
-            Spacer(Modifier.height(16.dp))
-
-            // 作者信息
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "作者：${plantPost.author}",
-                    fontSize = 14.sp,
-                    color = Color.Gray
-                )
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        Icons.Default.Favorite,
-                        contentDescription = "点赞",
-                        tint = Color(0xFFFF7B7B),
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(Modifier.size(4.dp))
-                    Text(
-                        text = plantPost.likes.toString(),
-                        fontSize = 14.sp,
-                        color = Color.Gray
-                    )
-
-                    Spacer(Modifier.size(16.dp))
-
-                    Icon(
-                        Icons.Default.Share,
-                        contentDescription = "分享",
-                        tint = Color.Gray,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            }
-
-            Spacer(Modifier.height(24.dp))
-
-            // 详细内容
-            Text(
-                text = "这里是植物的详细描述信息。可以包含植物的生长习性、养护方法、特点等详细信息。用户可以通过这个页面了解更多关于该植物的知识。",
-                fontSize = 16.sp,
-                color = Color(0xFF666666),
-                lineHeight = 24.sp
-            )
-
-            Spacer(Modifier.height(16.dp))
-
-            // 更多图片展示
-            Text(
-                text = "更多图片",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black
-            )
-
-            Spacer(Modifier.height(8.dp))
-
-            // 模拟更多图片
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                repeat(3) { index ->
-                    Image(
-                        painter = rememberAsyncImagePainter("${plantPost.img}?size=small$index"),
-                        contentDescription = null,
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(80.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(Color.LightGray),
-                        contentScale = ContentScale.Crop
-                    )
-                }
-            }
-        }
+        // 3. 评论板块
+        CommentSection(
+            plantPost = plantPost,
+            commentText = commentText
+        )
     }
 }
+
+@Composable
+private fun TopAppBar(onBackClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .statusBarsPadding()
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        IconButton(
+            onClick = onBackClick,
+            modifier = Modifier.size(24.dp)
+        ) {
+            Icon(
+                Icons.Default.ArrowBack,
+                contentDescription = "返回",
+                tint = Color.Black
+            )
+        }
+
+        Spacer(modifier = Modifier.width(16.dp))
+
+        Text(
+            text = "植物详情",
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Medium,
+            color = Color.Black,
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+@Composable
+private fun ImageDisplaySection(plantPost: PlantPost) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(300.dp)
+    ) {
+        Image(
+            painter = rememberAsyncImagePainter(plantPost.img),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop
+        )
+    }
+}
+
+
+
+

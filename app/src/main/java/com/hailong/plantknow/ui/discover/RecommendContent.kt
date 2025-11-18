@@ -50,10 +50,12 @@ fun RecommendContent(
 }
 // PlantPost.kt
 data class PlantPost(
-    val id: String = "", // 添加唯一标识
+    val id: String,
     val img: String,
     val desc: String,
     val author: String,
     val likes: Int,
+    val authorAvatar: String? = null, // 添加作者头像
+    val publishTime: String? = null,   // 添加发布时间
     val randomHeight: Int
 )
