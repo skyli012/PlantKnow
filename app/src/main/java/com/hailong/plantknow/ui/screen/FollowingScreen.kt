@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 // 关注界面 - 空白页面
+// 简化 FollowingScreen，移除手势检测
 @Composable
 fun FollowingScreen(
     onSwipeToDiscovery: () -> Unit = {}
@@ -25,19 +26,11 @@ fun FollowingScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .pointerInput(Unit) {
-                detectHorizontalDragGestures { change, dragAmount ->
-                    // 从左往右滑动返回发现页面
-                    if (dragAmount > 30) {
-                        onSwipeToDiscovery()
-                    }
-                }
-            }
+            .background(Color(0xFFE9F0F8))
     ) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .background(Color(0xFFE9F0F8)),
+                .fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
@@ -51,6 +44,12 @@ fun FollowingScreen(
                 text = "关注用户后，他们的动态会显示在这里",
                 fontSize = 14.sp,
                 color = Color.Gray.copy(alpha = 0.7f)
+            )
+            Spacer(Modifier.height(16.dp))
+            Text(
+                text = "← 向右滑动返回发现页面",
+                fontSize = 12.sp,
+                color = Color.Gray.copy(alpha = 0.5f)
             )
         }
     }

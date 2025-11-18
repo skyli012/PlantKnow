@@ -14,7 +14,7 @@ import com.hailong.plantknow.ui.screen.PlantPost
 
 // 原来的 WaterfallContent 和 PlantCard 保持不变...
 @Composable
-fun WaterfallContent() {
+fun RecommendContent() {
     val data = remember {
         (1..10).map {
             PlantPost(

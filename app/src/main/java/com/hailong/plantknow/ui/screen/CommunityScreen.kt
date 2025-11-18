@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 //import androidx.compose.material.Icon
 //import androidx.compose.material.Text
@@ -30,8 +32,23 @@ fun CommunityScreen(
     onBackClick: () -> Unit,
     onSwipeEnabledChange: (Boolean) -> Unit = {}
 ) {
-    var selectedTab by remember { mutableStateOf("发现") }
-    var discoveryInitialPage by remember { mutableStateOf(0) } // 0=推荐, 2=知识
+    val mainTabs = listOf("发现", "关注")
+    val pagerState = rememberPagerState(initialPage = 0, pageCount = { mainTabs.size })
+    var selectedTab by remember { mutableStateOf(mainTabs[0]) }
+    var triggerMainPageChange by remember { mutableStateOf<Int?>(null) }
+
+    // 监听主页面变化
+    LaunchedEffect(pagerState.currentPage) {
+        selectedTab = mainTabs[pagerState.currentPage]
+    }
+
+    // 监听触发的主页面变化
+    LaunchedEffect(triggerMainPageChange) {
+        triggerMainPageChange?.let { targetPage ->
+            pagerState.animateScrollToPage(targetPage)
+            triggerMainPageChange = null
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -40,27 +57,36 @@ fun CommunityScreen(
             .padding(horizontal = 12.dp)
     ) {
         Spacer(Modifier.height(16.dp))
-        TopBar(selectedTab) {
-            selectedTab = it
-            // 点击标签时重置到推荐页面
-            if (it == "发现") {
-                discoveryInitialPage = 0
+
+        TopBar(selectedTab) { tab ->
+            val index = mainTabs.indexOf(tab)
+            if (index != -1) {
+                triggerMainPageChange = index
             }
         }
+
         Spacer(Modifier.height(4.dp))
 
-        when (selectedTab) {
-            "关注" -> FollowingScreen(
-                onSwipeToDiscovery = {
-                    selectedTab = "发现"
-                    discoveryInitialPage = 2 // 设置发现页面初始显示知识页面
-                }
-            )
-            "发现" -> DiscoveryScreen(
-                onSwipeToHome = onBackClick,
-                onSwipeToFollowing = { selectedTab = "关注" },
-                initialPage = discoveryInitialPage
-            )
+        // 主 HorizontalPager - 统一管理发现和关注的滑动
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.fillMaxSize(),
+            userScrollEnabled = true
+        ) { page ->
+            when (page) {
+                0 -> DiscoveryScreen(
+                    onSwipeToHome = onBackClick,
+                    // 移除关注相关的边界滑动，因为现在由外层处理
+                    onSwipeToFollowing = {},
+                    initialPage = 0
+                )
+                1 -> FollowingScreen(
+                    onSwipeToDiscovery = {
+                        // 直接滑动到发现页面
+                        triggerMainPageChange = 0
+                    }
+                )
+            }
         }
     }
 }

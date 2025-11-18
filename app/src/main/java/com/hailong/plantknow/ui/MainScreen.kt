@@ -63,6 +63,8 @@ import com.hailong.plantknow.viewmodel.FavoriteViewModelFactory
 import com.hailong.plantknow.viewmodel.PlantViewModel
 import com.hailong.plantknow.viewmodel.PlantViewModelFactory
 import kotlinx.coroutines.launch
+import kotlin.math.abs
+import kotlin.math.max
 
 /**
  * 主屏幕Composable函数
@@ -219,7 +221,7 @@ fun MainScreen(
                         onDragEnd = {
                             coroutineScope.launch {
                                 val currentOffset = slideOffset.value
-                                val threshold = maxSlideOffsetPx * 0.1f // 20% 阈值
+                                val threshold = maxSlideOffsetPx * 0.15f // 15% 阈值
 
                                 when {
                                     // 向右滑动显示个人主页
@@ -270,16 +272,17 @@ fun MainScreen(
         ) {
             // ========== 页面渲染部分 ==========
 
-            // 1. 社区页面容器 - 从右侧滑入
+            // 1. 社区页面容器 - 从右侧滑入并覆盖在主页面之上
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .graphicsLayer {
-                        // 修复：社区页面在右侧，向左滑动时进入
-                        translationX = maxSlideOffsetPx + slideOffset.value
+                        // 社区页面从右侧滑入，覆盖在主页面之上
+                        translationX = max(0f, maxSlideOffsetPx + slideOffset.value)
+                        // 添加明显的阴影效果
+                        shadowElevation = if (progress < 0f) 16.dp.toPx() else 0f
                     }
             ) {
-                // 滑动超过10%才显示社区页面
                 if (progress < 0f) {
                     CommunityScreen(
                         onBackClick = {
@@ -295,7 +298,7 @@ fun MainScreen(
                 }
             }
 
-            // 2. 个人主页容器 - 从左侧滑入
+            // 2. 个人主页容器 - 从左侧滑入（保持不变）
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -320,12 +323,18 @@ fun MainScreen(
                 }
             }
 
-            // 3. 主页面容器 - 跟随滑动移动
+            // 3. 主页面容器 - 跟随滑动移动，社区页面覆盖时添加效果
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .graphicsLayer {
                         translationX = slideOffset.value
+                        // 只有社区页面覆盖时主页面才变暗
+                        alpha = if (slideOffset.value < 0) {
+                            1f - (abs(slideOffset.value) / maxSlideOffsetPx) * 0.3f
+                        } else {
+                            1f
+                        }
                     }
             ) {
                 // 主页面内容 - 植物识别功能

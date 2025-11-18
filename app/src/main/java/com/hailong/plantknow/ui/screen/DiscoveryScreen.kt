@@ -31,9 +31,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hailong.plantknow.ui.discover.BeautyImagesContent
 import com.hailong.plantknow.ui.discover.KnowledgeContent
-import com.hailong.plantknow.ui.discover.WaterfallContent
+import com.hailong.plantknow.ui.discover.RecommendContent
 
 // 发现界面 - 包含推荐、美图、知识的切换
+// 修改 DiscoveryScreen，移除向右滑动到关注的逻辑
 @Composable
 fun DiscoveryScreen(
     onSwipeToHome: () -> Unit = {},
@@ -50,14 +51,6 @@ fun DiscoveryScreen(
         selectedTab = tabs[pagerState.currentPage]
     }
 
-    // 监听标签点击，切换页面
-    LaunchedEffect(selectedTab) {
-        val index = tabs.indexOf(selectedTab)
-        if (index != -1 && index != pagerState.currentPage) {
-            pagerState.animateScrollToPage(index)
-        }
-    }
-
     // 监听触发的页面变化
     LaunchedEffect(triggerPageChange) {
         triggerPageChange?.let { targetPage ->
@@ -66,74 +59,42 @@ fun DiscoveryScreen(
         }
     }
 
-    Box(
+    // 只保留返回主页的边界滑动逻辑
+    LaunchedEffect(pagerState.currentPageOffsetFraction) {
+        val offset = pagerState.currentPageOffsetFraction
+
+        // 在第一个页面且向右滑动超过阈值：返回主页
+        if (pagerState.currentPage == 0 && offset > 0.5f) {
+            onSwipeToHome()
+            pagerState.scrollToPage(0) // 重置位置
+        }
+    }
+
+    Column(
         modifier = Modifier
             .fillMaxSize()
-            .pointerInput(Unit) {
-                var totalDrag = 0f
-
-                detectDragGestures(
-                    onDragStart = { totalDrag = 0f },
-                    onDrag = { change, dragAmount ->
-                        totalDrag += dragAmount.x   // 拖动方向：右为正、左为负
-                    },
-                    onDragEnd = {
-                        when {
-                            totalDrag > 80 -> { //向右滑
-                                when (pagerState.currentPage) {
-                                    0 -> onSwipeToHome()
-                                    1 -> triggerPageChange = 0
-                                    2 -> triggerPageChange = 1
-                                }
-                            }
-                            totalDrag < -80 -> { //向左滑
-                                when (pagerState.currentPage) {
-                                    0 -> triggerPageChange = 1
-                                    1 -> triggerPageChange = 2
-                                    2 -> onSwipeToFollowing()
-                                }
-                            }
-                        }
-                    }
-                )
-            }
-
+            .background(Color(0xFFE9F0F8))
     ) {
-        Column(
-            modifier = Modifier.fillMaxSize()
-        ) {
-            SecondaryTabs(selectedTab, tabs) { selectedTab = it }
-            Spacer(Modifier.height(12.dp))
+        SecondaryTabs(
+            selected = selectedTab,
+            tabs = tabs
+        ) { tab ->
+            val index = tabs.indexOf(tab)
+            if (index != -1) {
+                triggerPageChange = index
+            }
+        }
+        Spacer(Modifier.height(12.dp))
 
-            HorizontalPager(
-                state = pagerState,
-                modifier = Modifier.fillMaxSize(),
-                userScrollEnabled = false
-            ) { page ->
-                when (page) {
-                    0 -> WaterfallContent()
-                    1 -> BeautyImagesContent()
-                    2 -> Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(Color(0xFFE9F0F8)),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Text(
-                            text = "植物知识",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF364858)
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        Text(
-                            text = "丰富的植物知识库正在建设中",
-                            fontSize = 14.sp,
-                            color = Color.Gray
-                        )
-                    }
-                }
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.fillMaxSize(),
+            userScrollEnabled = true
+        ) { page ->
+            when (page) {
+                0 -> RecommendContent()
+                1 -> BeautyImagesContent()
+                2 -> KnowledgeContent()
             }
         }
     }
