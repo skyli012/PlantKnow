@@ -31,11 +31,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.hailong.plantknow.ui.discover.PlantPost
 
 @Composable
 fun CommunityScreen(
     onBackClick: () -> Unit,
-    onSwipeEnabledChange: (Boolean) -> Unit = {}
+    onSwipeEnabledChange: (Boolean) -> Unit = {},
+    onPlantDetailClick: (PlantPost) -> Unit // 新增：处理植物详情点击
 ) {
     val mainTabs = listOf("发现", "关注")
     val pagerState = rememberPagerState(initialPage = 0, pageCount = { mainTabs.size })
@@ -83,7 +85,8 @@ fun CommunityScreen(
                     onSwipeToHome = onBackClick,
                     // 移除关注相关的边界滑动，因为现在由外层处理
                     onSwipeToFollowing = {},
-                    initialPage = 0
+                    initialPage = 0,
+                    onPlantItemClick = onPlantDetailClick // 传递点击事件
                 )
                 1 -> FollowingScreen(
                     onSwipeToDiscovery = {

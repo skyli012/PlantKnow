@@ -13,10 +13,13 @@ import androidx.compose.ui.unit.dp
 
 // 原来的 WaterfallContent 和 PlantCard 保持不变...
 @Composable
-fun RecommendContent() {
+fun RecommendContent(
+    onItemClick: (PlantPost) -> Unit // 接收点击回调
+) {
     val data = remember {
         (1..10).map {
             PlantPost(
+                id = "post_$it", // 添加ID
                 img = "https://picsum.photos/300/30$it",
                 desc = "文本描述$it",
                 author = "作者$it",
@@ -30,19 +33,24 @@ fun RecommendContent() {
         columns = StaggeredGridCells.Fixed(2),
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(
-            start = 4.dp,    // 左边距
+            start = 4.dp,
             top = 2.dp,
-            end = 4.dp,      // 右边距
+            end = 4.dp,
         ),
         verticalItemSpacing = 5.dp,
         horizontalArrangement = Arrangement.spacedBy(5.dp)
     ) {
         items(data) { card ->
-            PlantCardContent(card)
+            PlantCardContent(
+                post = card,
+                onItemClick = onItemClick // 传递点击事件
+            )
         }
     }
 }
+// PlantPost.kt
 data class PlantPost(
+    val id: String = "", // 添加唯一标识
     val img: String,
     val desc: String,
     val author: String,

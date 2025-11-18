@@ -1,7 +1,9 @@
+// PlantCardContent.kt
 package com.hailong.plantknow.ui.discover
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -27,12 +29,16 @@ import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
 
 @Composable
-fun PlantCardContent(post: PlantPost) {
+fun PlantCardContent(
+    post: PlantPost,
+    onItemClick: (PlantPost) -> Unit // 添加点击回调
+) {
     Column(
         modifier = Modifier
             .background(Color.White, RoundedCornerShape(7.dp))
             .fillMaxWidth()
             .wrapContentHeight()
+            .clickable { onItemClick(post) } // 添加点击事件
     ) {
         Image(
             painter = rememberAsyncImagePainter(post.img),
@@ -40,7 +46,7 @@ fun PlantCardContent(post: PlantPost) {
             modifier = Modifier
                 .fillMaxWidth()
                 .height(post.randomHeight.dp)
-                .clip(RoundedCornerShape(7.dp, 7.dp, 0.dp, 0.dp))  // 左上, 右上, 右下, 左下
+                .clip(RoundedCornerShape(7.dp, 7.dp, 0.dp, 0.dp))
                 .background(Color.LightGray, RoundedCornerShape(7.dp, 7.dp, 0.dp, 0.dp)),
             contentScale = ContentScale.Crop
         )

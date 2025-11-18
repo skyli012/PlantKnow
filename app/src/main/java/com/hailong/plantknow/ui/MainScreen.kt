@@ -12,39 +12,55 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.draw.clip
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.rememberAsyncImagePainter
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import com.hailong.plantknow.R
 import com.hailong.plantknow.database.FavoritePlantDatabase
 import com.hailong.plantknow.repository.FavoriteRepository
-import androidx.compose.runtime.collectAsState
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.withStyle
-import com.hailong.plantknow.model.FavoritePlant
 import com.hailong.plantknow.ui.component.ErrorCard
 import com.hailong.plantknow.ui.component.LoadingContent
 import com.hailong.plantknow.ui.component.PermissionDialog
@@ -52,9 +68,9 @@ import com.hailong.plantknow.ui.component.PermissionExplanationDialog
 import com.hailong.plantknow.ui.component.PlantBasicInfoWithStickyHeader
 import com.hailong.plantknow.ui.component.PlantDetailsWithStickyHeader
 import com.hailong.plantknow.ui.component.WelcomeContent
+import com.hailong.plantknow.ui.detail.PlantDetailScreen
+import com.hailong.plantknow.ui.discover.PlantPost
 import com.hailong.plantknow.ui.screen.CommunityScreen
-import com.hailong.plantknow.ui.screen.FavoriteDetailScreen
-import com.hailong.plantknow.ui.screen.FavoriteListScreen
 import com.hailong.plantknow.ui.screen.ProfileScreen
 import com.hailong.plantknow.utils.ImageSaver
 import com.hailong.plantknow.utils.PermissionChecker
@@ -133,6 +149,17 @@ fun MainScreen(
         }
     }
 
+    // 添加植物详情相关状态
+    var selectedPlantPost by remember { mutableStateOf<PlantPost?>(null) }
+    var showPlantDetail by remember { mutableStateOf(false) }
+
+    // 植物详情点击处理函数 - 修改为实际跳转逻辑
+    val handlePlantDetailClick: (PlantPost) -> Unit = { plantPost ->
+        selectedPlantPost = plantPost
+        showPlantDetail = true
+        println("跳转到植物详情: ${plantPost.desc}")
+    }
+
     // 是否显示识别结果
     val hasRecognitionResult = remember {
         derivedStateOf {
@@ -150,8 +177,12 @@ fun MainScreen(
     }
 
     // 处理返回键
-    BackHandler(enabled = showProfile || showCommunity || hasRecognitionResult.value) {
+    BackHandler(enabled = showProfile || showCommunity || hasRecognitionResult.value || showPlantDetail) {
         when {
+            showPlantDetail -> {
+                showPlantDetail = false
+                selectedPlantPost = null
+            }
             showProfile -> {
                 coroutineScope.launch {
                     slideOffset.animateTo(0f, animationSpec = tween(300))
@@ -272,14 +303,12 @@ fun MainScreen(
         ) {
             // ========== 页面渲染部分 ==========
 
-            // 1. 社区页面容器 - 从右侧滑入并覆盖在主页面之上
+            // 1. 社区页面容器
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .graphicsLayer {
-                        // 社区页面从右侧滑入，覆盖在主页面之上
                         translationX = max(0f, maxSlideOffsetPx + slideOffset.value)
-                        // 添加明显的阴影效果
                         shadowElevation = if (progress < 0f) 16.dp.toPx() else 0f
                     }
             ) {
@@ -291,9 +320,7 @@ fun MainScreen(
                                 showCommunity = false
                             }
                         },
-                        onSwipeEnabledChange = { enabled ->
-                            isSwipeEnabled = enabled
-                        }
+                        onPlantDetailClick = handlePlantDetailClick
                     )
                 }
             }
@@ -364,6 +391,16 @@ fun MainScreen(
                             showCommunity = true
                             showProfile = false
                         }
+                    }
+                )
+            }
+            // 4. 植物详情页面 - 覆盖在所有页面之上
+            if (showPlantDetail && selectedPlantPost != null) {
+                PlantDetailScreen(
+                    plantPost = selectedPlantPost!!,
+                    onBackClick = {
+                        showPlantDetail = false
+                        selectedPlantPost = null
                     }
                 )
             }

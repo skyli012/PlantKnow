@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.sp
 import com.hailong.plantknow.ui.discover.BeautyImagesContent
 import com.hailong.plantknow.ui.discover.KnowledgeContent
+import com.hailong.plantknow.ui.discover.PlantPost
 import com.hailong.plantknow.ui.discover.RecommendContent
 
 // 发现界面 - 包含推荐、美图、知识的切换
@@ -30,7 +31,8 @@ import com.hailong.plantknow.ui.discover.RecommendContent
 fun DiscoveryScreen(
     onSwipeToHome: () -> Unit = {},
     onSwipeToFollowing: () -> Unit = {},
-    initialPage: Int = 0
+    initialPage: Int = 0,
+    onPlantItemClick: (PlantPost) -> Unit // 新增：接收植物项点击事件
 ) {
     val tabs = listOf("推荐", "美图", "知识")
     val pagerState = rememberPagerState(initialPage = initialPage, pageCount = { tabs.size })
@@ -82,7 +84,7 @@ fun DiscoveryScreen(
             userScrollEnabled = true
         ) { page ->
             when (page) {
-                0 -> RecommendContent()
+                0 -> RecommendContent(onItemClick = onPlantItemClick)
                 1 -> BeautyImagesContent()
                 2 -> KnowledgeContent()
             }
