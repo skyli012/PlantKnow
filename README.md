@@ -69,7 +69,7 @@
 ## 🖼️ 应用界面预览
 
 | 首页 | 识别结果 | 个人主页 |  
-|------|-----------|-----------|
+|------|-----------|------------------|
 | ![screenshot1](docs/show/home_page.png) | ![screenshot2](docs/show/recognition.png) | ![screenshot3](docs/show/profile_page.png) |
 
 ---
