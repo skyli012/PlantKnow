@@ -70,7 +70,7 @@
 
 | 首页 | 识别结果 | 个人主页 |  
 |------|-----------|-----------|
-| ![screenshot1](docs/show/home_page.png) | ![screenshot2](docs/show/recognition.png) | ![screenshot2](docs/show/recognition.png) |
+| ![screenshot1](docs/show/home_page.png) | ![screenshot2](docs/show/recognition.png) | ![screenshot2](docs/show/profile_page.png) |
 
 ---
 
