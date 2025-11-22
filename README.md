@@ -54,15 +54,15 @@
 
 | 模块 | 技术 |
 |------|------|
-| 语言 | Kotlin |
-| 架构 | MVVM + Clean Architecture |
-| UI框架 | Jetpack Compose + Accompanist |
-| 异步 | Kotlin Coroutines + StateFlow |
-| 网络 | Retrofit + Gson |
-| 图片加载 | Coil |
-| AI平台 | 百度AI开放平台 |
-| 构建工具 | Gradle |
-| 其他 | 模块化架构 / Compose Navigation / Error State Handling |
+| **语言** | Kotlin |
+| **架构** | MVVM + Clean Architecture |
+| **UI框架** | Jetpack Compose + Material3 |
+| **异步编程** | Kotlin Coroutines + StateFlow |
+| **网络请求** | Retrofit + Gson |
+| **图片加载** | Coil |
+| **AI平台** | 百度AI开放平台 |
+| **构建工具** | Gradle + Kotlin DSL |
+| **其他** | 模块化架构 / Compose Navigation / 错误状态处理 |
 
 ---
 
