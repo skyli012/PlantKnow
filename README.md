@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🌿 PlantKnow - 植物识别 Android 应用
+# PlantKnow - 植物识别 Android 应用
 
 [![Kotlin](https://img.shields.io/badge/Kotlin-1.9.0-blue.svg?logo=kotlin)](https://kotlinlang.org) [![Compose](https://img.shields.io/badge/Jetpack%20Compose-1.5.0-brightgreen.svg)](https://developer.android.com/jetpack/compose) [![Architecture](https://img.shields.io/badge/Architecture-MVVM%20%2B%20Coroutines-orange.svg)](https://developer.android.com/topic/architecture) [![API](https://img.shields.io/badge/API-21%2B-yellow.svg)](https://android-arsenal.com/api?level=21)
 
@@ -69,8 +69,8 @@
 ## 🖼️ 应用界面预览
 
 | 首页 | 识别结果 | 个人主页 |  
-|------|-----------|-----------|
-| ![screenshot1](docs/show/home_page.png) | ![screenshot2](docs/show/recognition.png) | ![screenshot2](docs/show/profile_page.png) |
+|------|-----------|------------------|
+| ![screenshot1](docs/show/home_page.png) | ![screenshot2](docs/show/recognition.png) | ![screenshot3](docs/show/profile_page.png) |
 
 ---
 
@@ -182,19 +182,5 @@ PlantKnow/
 
 ---
 
-## 👨‍💻 作者
-
-**李海龙 (Hailong Li)**  
-🎓 重庆科技大学 · 智能科学与技术  
-📧 Email: lihailong2077@163.com  
-🌐 GitHub: [skyli012]([https://github.com/your-username](https://github.com/skyli012))
-
----
-
-## 🪶 License
-
-This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
-
----
 
 > 💡 **PlantKnow** 旨在让 AI 识别技术更贴近生活，让自然知识触手可及。
