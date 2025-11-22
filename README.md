@@ -54,15 +54,15 @@
 
 | 模块 | 技术 |
 |------|------|
-| 语言 | Kotlin |
-| 架构 | MVVM + Clean Architecture |
-| UI框架 | Jetpack Compose + Accompanist |
-| 异步 | Kotlin Coroutines + StateFlow |
-| 网络 | Retrofit + Gson |
-| 图片加载 | Coil |
-| AI平台 | 百度AI开放平台 |
-| 构建工具 | Gradle |
-| 其他 | 模块化架构 / Compose Navigation / Error State Handling |
+| **语言** | Kotlin |
+| **架构** | MVVM + Clean Architecture |
+| **UI框架** | Jetpack Compose + Material3 |
+| **异步编程** | Kotlin Coroutines + StateFlow |
+| **网络请求** | Retrofit + Gson |
+| **图片加载** | Coil |
+| **AI平台** | 百度AI开放平台 |
+| **构建工具** | Gradle + Kotlin DSL |
+| **其他** | 模块化架构 / Compose Navigation / 错误状态处理 |
 
 ---
 
@@ -78,45 +78,89 @@
 
 ```
 PlantKnow/
-├── app/                  # 应用主模块（UI + 业务逻辑）
-│   ├── data/             # 数据层：Model + Repository
-│   │   ├── model/        # 数据模型（DTO / Entity）
+├── app/
+│   ├── src/main/java/com/hailong/plantknow/
+│   │   ├── database/                    # 本地数据库层
+│   │   │   ├── dao/                     # DAO 接口
+│   │   │   ├── entity/                  # 数据库实体
+│   │   │   ├── FavoritePlantDatabase.kt
+│   │   │   ├── UserDatabase.kt
+│   │   │   └── UserProfileDatabase.kt
+│   │   │
+│   │   ├── model/                       # 数据模型
 │   │   │   ├── PlantResult.kt
 │   │   │   ├── PlantWithDetails.kt
-│   │   │   └── RecognitionResponse.kt
-│   │   ├── repository/   # 数据仓库
-│   │   │   └── PlantRecognitionRepository.kt
-│   │   └── network/      # 网络相关
-│   │       ├── ApiClient.kt
-│   │       ├── ApiService.kt
-│   │       ├── AliyunApiService.kt
-│   │       └── AuthHelper.kt
-│   │
-│   ├── ui/               # UI 层（Jetpack Compose）
-│   │   ├── screen/       # 各个页面组件
-│   │   │   ├── SplashScreen.kt
-│   │   │   └── MainScreen.kt
+│   │   │   ├── FavoritePlant.kt
+│   │   │   ├── RecognitionResponse.kt
+│   │   │   └── AliyunModel.kt
 │   │   │
-│   │   ├── state/        # UI 状态管理（State 类）
-│   │   │   ├── PlantUIState.kt
-│   │   │   └── MainScreen.kt
+│   │   ├── network/                     # 网络请求层
+│   │   │   ├── ApiClient.kt             # Retrofit 客户端
+│   │   │   ├── BaiduApiService.kt       # 百度 API 接口
+│   │   │   ├── AliyunApiService.kt      # 阿里云 API 接口
+│   │   │   └── AuthHelper.kt            # 认证辅助类
 │   │   │
-│   │   └── util/         # UI 工具类
-│   │       ├── Constants.kt
-│   │       ├── ImageUtils.kt
-│   │       └── Result.kt
+│   │   ├── repository/                  # 数据仓库层
+│   │   │   ├── PlantRecongnitionRepository.kt
+│   │   │   ├── FavoriteRepository.kt
+│   │   │   ├── UserStatsRepository.kt
+│   │   │   └── UserProfileRepository.kt
+│   │   │
+│   │   ├── viewmodel/                   # ViewModel 层
+│   │   │   ├── PlantViewModel.kt
+│   │   │   ├── PlantViewModelFactory.kt
+│   │   │   ├── FavoriteViewModel.kt
+│   │   │   ├── FavoriteViewModelFactory.kt
+│   │   │   ├── UserStatsViewModel.kt
+│   │   │   ├── UserStatsViewModelFactory.kt
+│   │   │   ├── UserProfileViewModel.kt
+│   │   │   └── UserProfileViewModelFactory.kt
+│   │   │
+│   │   ├── ui/                          # UI 层（Jetpack Compose）
+│   │   │   ├── screen/                  # 屏幕页面
+│   │   │   │   ├── MainScreen.kt
+│   │   │   │   ├── SplashScreen.kt
+│   │   │   │   ├── ProfileScreen.kt
+│   │   │   │   ├── CommunityScreen.kt
+│   │   │   │   ├── DiscoveryScreen.kt
+│   │   │   │   ├── FollowingScreen.kt
+│   │   │   │   ├── FavoriteListScreen.kt
+│   │   │   │   └── FavoriteDetailScreen.kt
+│   │   │   │
+│   │   │   ├── component/               # 通用组件
+│   │   │   │   └── AboutContent.kt
+│   │   │   │
+│   │   │   ├── discover/                # 发现模块组件
+│   │   │   │   ├── WaterfallContent.kt
+│   │   │   │   ├── BeautyImagesContent.kt
+│   │   │   │   ├── KnowledgeContent.kt
+│   │   │   │   └── PlantCardContent.kt
+│   │   │   │
+│   │   │   ├── profile/                 # 个人页面组件
+│   │   │   │   ├── UserInfoCard.kt
+│   │   │   │   ├── FavoriteEntryCard.kt
+│   │   │   │   └── OtherFeaturesSection.kt
+│   │   │   │
+│   │   │   └── MainScreen.kt            # 主屏幕入口
+│   │   │
+│   │   ├── utils/                       # 工具类
+│   │   │   ├── Constants.kt             # 常量定义
+│   │   │   ├── ImageUtils.kt            # 图片处理工具
+│   │   │   ├── ImageSaver.kt            # 图片保存工具
+│   │   │   ├── ImagePicker.kt           # 图片选择工具
+│   │   │   ├── PermissionChecker.kt     # 权限检查
+│   │   │   ├── LearningDaysManager.kt   # 学习日期管理
+│   │   │   └── Result.kt                # 结果包装类
+│   │   │
+│   │   └── MainActivity.kt              # 应用入口
 │   │
-│   ├── viewmodel/        # ViewModel 层（业务逻辑处理）
-│   │   ├── PlantViewModel.kt
-│   │   └── PlantViewModelFactory.kt
-│   │
-│   ├── navigation/       # 导航逻辑（Navigation Graph）
-│   │   └── AppNavigation.kt
-│   │
-│   └── MainActivity.kt   # 入口 Activity
+│   ├── build.gradle                     # 模块级构建配置
+│   └── proguard-rules.pro
 │
-├── build.gradle          # 模块级构建配置
-└── settings.gradle       # 项目根目录配置（可选）
+├── gradle/                              # Gradle 配置
+├── build.gradle                         # 项目级构建配置
+├── settings.gradle
+└── README.md
 ```
 
 

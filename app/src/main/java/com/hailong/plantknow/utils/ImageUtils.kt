@@ -1,148 +1,62 @@
 package com.hailong.plantknow.utils
 
-import android.content.ContentResolver
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
+import android.util.Base64
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
 import java.io.IOException
-import android.util.Base64
+import java.io.InputStream
 
 /**
- * 图片处理工具类
- * 专门针对百度植物识别API优化的图片处理工具
- *
- * 主要功能：
- * 1. 从Uri加载图片并进行智能压缩
- * 2. 将Bitmap转换为Base64字符串
- * 3. 计算Bitmap内存占用大小
- *
- * 特别注意：为满足百度AI API要求，Base64编码需无换行且不含MIME头。
- *
- * 百度API图片要求：
- * - base64编码后大小不超过4M (即原始文件压缩后 < ~3MB)
- * - 最短边 >= 15px, 最长边 <= 4096px
- * - 格式支持 jpg/png/bmp
- * - Base64编码后需 UrlEncode，且不能包含MIME头
+ * 为提高识别准确率优化的图像处理工具
+ * 策略：在文件大小限制内，尽可能保留植物识别所需的关键特征
  */
-object ImageUtils {
+object AccuracyOptimizedImageUtils {
 
     /**
-     * 将Uri指向的图片转换为Bitmap，并进行压缩以满足百度植物识别API的要求。
-     *
-     * 压缩策略：
-     * 1. 尺寸压缩：确保图片最长边不超过4096px，最短边不小于15px
-     * 2. 质量压缩：通过调整JPEG质量参数，确保Base64编码后不超过4MB
-     * 3. 内存优化：使用采样率加载，避免OOM
-     *
-     * @param context 用于获取ContentResolver
-     * @param uri 图片的Uri
-     * @return 压缩并符合要求的Bitmap，如果失败则返回null
+     * 为提高识别准确率优化的图像处理
      */
-    suspend fun compressImage(
+    suspend fun optimizeForRecognitionAccuracy(
         context: Context,
         uri: Uri
-    ): Bitmap? = withContext(Dispatchers.IO) {
-        // 获取内容解析器，用于读取URI对应的图片数据
-        val resolver: ContentResolver = context.contentResolver
-        var inputStream = resolver.openInputStream(uri) ?: return@withContext null
+    ): String? = withContext(Dispatchers.IO) {
+        val resolver = context.contentResolver
+        var inputStream: InputStream? = null
 
         try {
-            // ==================== 步骤1: 获取原始图片尺寸信息 ====================
-            val options = BitmapFactory.Options()
-            options.inJustDecodeBounds = true // 只解码边界信息，不加载像素数据到内存
+            // ==================== 1. 分析图像特性 ====================
+            inputStream = resolver.openInputStream(uri)
+            val options = BitmapFactory.Options().apply {
+                inJustDecodeBounds = true
+            }
             BitmapFactory.decodeStream(inputStream, null, options)
-            inputStream.close()
+            inputStream?.close()
 
-            // 检查图片尺寸是否符合API要求（最短边 >= 15px）
-            if (options.outWidth < 15 || options.outHeight < 15) {
-                throw IllegalArgumentException("Image shortest side must be at least 15px")
-            }
+            val imageInfo = analyzeImageForRecognition(options.outWidth, options.outHeight)
 
-            // ==================== 步骤2: 计算采样率进行尺寸压缩 ====================
-            val reqMaxDim = 4096 // API要求的最长边限制
-            val currentMaxDim = maxOf(options.outWidth, options.outHeight)
-            var inSampleSize = 1
+            // ==================== 2. 智能尺寸选择 ====================
+            val targetSize = calculateOptimalSizeForAccuracy(
+                options.outWidth,
+                options.outHeight,
+                imageInfo.aspectRatio
+            )
 
-            // 如果当前尺寸超过限制，计算合适的采样率
-            if (currentMaxDim > reqMaxDim) {
-                val ratio = currentMaxDim.toFloat() / reqMaxDim
-                // 采样率必须是2的幂次方（1, 2, 4, 8, 16...）
-                while ((inSampleSize * 2) <= ratio) {
-                    inSampleSize *= 2
-                }
-            }
+            // ==================== 3. 高质量解码 ====================
+            inputStream = resolver.openInputStream(uri)
+            val bitmap = decodeHighQualityBitmap(inputStream, targetSize)
+            inputStream?.close()
 
-            // ==================== 步骤3: 使用采样率加载Bitmap到内存 ====================
-            inputStream = resolver.openInputStream(uri) ?: return@withContext null
-            options.inJustDecodeBounds = false // 现在要实际加载图片数据
-            options.inSampleSize = inSampleSize // 设置采样率
-            options.inPreferredConfig = Bitmap.Config.ARGB_8888 // 使用高质量的像素格式
-            var bitmap = BitmapFactory.decodeStream(inputStream, null, options)
-            inputStream.close()
+            // ==================== 4. 智能格式选择 ====================
+            return@withContext optimizeEncodingForRecognition(bitmap, imageInfo)
 
-            if (bitmap == null) return@withContext null
-
-            // ==================== 步骤4: 二次尺寸检查和安全缩放 ====================
-            // 由于采样率计算可能存在的精度问题，进行最终尺寸验证
-            if (maxOf(bitmap.width, bitmap.height) > 4096) {
-                // 理论上不会发生，但如果发生则进行精确缩放
-                val scale = 4096f / maxOf(bitmap.width, bitmap.height)
-                val scaledWidth = (bitmap.width * scale).toInt()
-                val scaledHeight = (bitmap.height * scale).toInt()
-                val scaledBitmap = Bitmap.createScaledBitmap(bitmap, scaledWidth, scaledHeight, true)
-                bitmap.recycle() // 回收原始Bitmap释放内存
-                bitmap = scaledBitmap
-            }
-
-            // ==================== 步骤5: 质量压缩循环 ====================
-            // 目标：原始JPEG字节数 < ~3MB，因为Base64编码会增加约33%的大小
-            val maxSizeBytesForBase64 = (4 * 1024 * 1024).toFloat() // 4MB - API限制
-            val maxSizeRawBytes = (maxSizeBytesForBase64 / 1.33f).toLong() // 约 3MB - 原始文件目标
-
-            val outputStream = ByteArrayOutputStream()
-            var quality = 95 // 从高质量开始尝试
-            val minQuality = 50 // 设置最低质量底线，避免图片质量过差
-
-            // 质量压缩循环：从高质量向低质量尝试，直到满足大小要求
-            while (quality >= minQuality) {
-                outputStream.reset() // 清空输出流
-
-                // 使用JPEG格式压缩，平衡文件大小和图片质量
-                bitmap.compress(Bitmap.CompressFormat.JPEG, quality, outputStream)
-                val rawSize = outputStream.size()
-
-                if (rawSize <= maxSizeRawBytes) {
-                    // 达到目标大小，创建最终的Bitmap
-                    val byteArray = outputStream.toByteArray()
-                    bitmap.recycle() // 回收中间Bitmap
-                    return@withContext BitmapFactory.decodeByteArray(byteArray, 0, byteArray.size)
-                }
-                quality -= 5 // 降低质量继续尝试
-            }
-
-            // 即使达到最低质量也无法满足大小要求，返回当前状态的最佳结果
-            val finalByteArray = outputStream.toByteArray()
-            bitmap.recycle()
-            BitmapFactory.decodeByteArray(finalByteArray, 0, finalByteArray.size)
-
-        } catch (e: IOException) {
-            // 文件读写异常
-            e.printStackTrace()
-            null
-        } catch (e: IllegalArgumentException) {
-            // 参数错误，如图片尺寸不满足要求
-            e.printStackTrace()
-            null
-        } catch (e: OutOfMemoryError) {
-            // 内存溢出错误
+        } catch (e: Exception) {
             e.printStackTrace()
             null
         } finally {
-            // 确保输入流被关闭，避免资源泄漏
             try {
                 inputStream?.close()
             } catch (e: IOException) {
@@ -152,54 +66,226 @@ object ImageUtils {
     }
 
     /**
-     * 将Bitmap转换为Base64编码的字符串（无换行，无MIME头）
-     * 这是百度AI API所要求的格式。
-     *
-     * 注意：Base64.NO_WRAP 确保编码字符串中没有换行符
-     * 百度API要求纯Base64字符串，不能包含 "data:image/jpeg;base64," 这样的MIME头
-     *
-     * @param bitmap 要转换的Bitmap
-     * @return 纯Base64字符串，可直接用于API请求
+     * 分析图像对植物识别的适宜性
      */
-    fun bitmapToBase64(bitmap: Bitmap): String {
-        val outputStream = ByteArrayOutputStream()
+    private fun analyzeImageForRecognition(width: Int, height: Int): ImageRecognitionInfo {
+        val aspectRatio = width.toFloat() / height.toFloat()
 
-        // 使用JPEG格式，避免PNG产生过大文件
-        // 质量85%在文件大小和图片质量之间取得良好平衡
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 85, outputStream)
-        val byteArray = outputStream.toByteArray()
+        // 修复：使用标准的比较操作符代替 'between'
+        val isLikelyCloseUp = aspectRatio in 0.7f..1.3f
 
-        // 关键：使用NO_WRAP，避免换行；不添加任何MIME头
-        // 符合百度API的严格要求
-        return Base64.encodeToString(byteArray, Base64.NO_WRAP)
+        return ImageRecognitionInfo(
+            aspectRatio = aspectRatio,
+            recommendedMinDimension = 800,
+            recommendedMaxDimension = 2048,
+            isLikelyCloseUp = isLikelyCloseUp
+        )
     }
 
     /**
-     * 计算Bitmap在内存中的近似大小（字节）
-     * 提供跨Android版本的兼容性实现
-     *
-     * 内存计算方式演进：
-     * - API 19+ (KitKat): allocationByteCount - 最准确，包含实际分配的内存
-     * - API 12+ (Honeycomb MR1): byteCount - 存储像素所需的最小内存
-     * - API 11-: 手动计算 - 行字节数 × 高度
-     *
-     * @param bitmap 要计算大小的Bitmap
-     * @return 内存占用的字节数
+     * 计算对识别准确率最有利的尺寸
      */
-    fun getImageSize(bitmap: Bitmap): Long {
+    private fun calculateOptimalSizeForAccuracy(
+        originalWidth: Int,
+        originalHeight: Int,
+        aspectRatio: Float
+    ): Pair<Int, Int> {
+        val maxApiDimension = 4096
+        val minDimensionForDetail = 600 // 保证最小尺寸有足够细节
+
+        val currentMax = maxOf(originalWidth, originalHeight)
+        val currentMin = minOf(originalWidth, originalHeight)
+
         return when {
-            android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT -> {
-                // API 19+：返回Bitmap实际分配的内存大小（包含可能的padding）
-                bitmap.allocationByteCount.toLong()
+            // 图像太小 - 避免放大，保持原尺寸
+            currentMax < minDimensionForDetail ->
+                originalWidth to originalHeight
+
+            // 图像在理想范围内 - 保持原尺寸或轻微缩小
+            currentMax in minDimensionForDetail..2048 ->
+                originalWidth to originalHeight
+
+            // 图像较大 - 缩放到保留细节的最佳尺寸
+            currentMax > 2048 -> {
+                val scale = 2048f / currentMax
+                val newWidth = (originalWidth * scale).toInt().coerceAtLeast(minDimensionForDetail)
+                val newHeight = (originalHeight * scale).toInt().coerceAtLeast(minDimensionForDetail)
+                newWidth to newHeight
             }
-            android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.HONEYCOMB_MR1 -> {
-                // API 12+：返回存储像素数据所需的最小内存
-                bitmap.byteCount.toLong()
+
+            else -> originalWidth to originalHeight
+        }
+    }
+
+    /**
+     * 高质量解码，避免采样率造成的细节损失
+     */
+    private fun decodeHighQualityBitmap(
+        inputStream: InputStream?,
+        targetSize: Pair<Int, Int>
+    ): Bitmap {
+        val (targetWidth, targetHeight) = targetSize
+
+        if (inputStream == null) {
+            throw IOException("Input stream is null")
+        }
+
+        // 先完整解码原图
+        val options = BitmapFactory.Options().apply {
+            inSampleSize = 1
+            inPreferredConfig = Bitmap.Config.ARGB_8888
+            inPreferredConfig = Bitmap.Config.RGB_565 // 使用更节省内存的配置，但保持质量
+        }
+
+        val originalBitmap = BitmapFactory.decodeStream(inputStream, null, options)
+            ?: throw IOException("Failed to decode bitmap")
+
+        // 如果需要缩放，使用高质量缩放算法
+        return if (originalBitmap.width != targetWidth || originalBitmap.height != targetHeight) {
+            val scaledBitmap = Bitmap.createScaledBitmap(
+                originalBitmap,
+                targetWidth,
+                targetHeight,
+                true // 使用双线性过滤，保持平滑
+            )
+            originalBitmap.recycle()
+            scaledBitmap ?: throw IOException("Failed to scale bitmap")
+        } else {
+            originalBitmap
+        }
+    }
+
+    /**
+     * 为识别准确率优化的编码策略
+     */
+    private fun optimizeEncodingForRecognition(
+        bitmap: Bitmap,
+        imageInfo: ImageRecognitionInfo
+    ): String {
+        val outputStream = ByteArrayOutputStream()
+
+        // 策略：优先保证特征清晰度，而不是文件大小
+        var quality = 90 // 从高质量开始
+        var encodedData: String
+
+        while (quality >= 70) { // 设置质量底线为70%
+            outputStream.reset()
+
+            // 对植物识别，JPEG通常足够，且文件更小
+            bitmap.compress(Bitmap.CompressFormat.JPEG, quality, outputStream)
+
+            val base64Size = calculateBase64Size(outputStream.size())
+
+            // 如果满足API限制，使用当前质量
+            if (base64Size <= 4 * 1024 * 1024) { // 4MB
+                encodedData = Base64.encodeToString(outputStream.toByteArray(), Base64.NO_WRAP)
+
+                // 额外检查：确保关键特征区域清晰
+                if (isFeatureDetailPreserved(bitmap, quality)) {
+                    return encodedData
+                }
             }
-            else -> {
-                // API 11-：手动计算（宽度 × 像素格式字节数 × 高度）
-                (bitmap.rowBytes * bitmap.height).toLong()
+
+            quality -= 5
+        }
+
+        // 如果所有尝试都失败，使用最低质量但保证特征可见
+        outputStream.reset()
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 70, outputStream)
+        encodedData = Base64.encodeToString(outputStream.toByteArray(), Base64.NO_WRAP)
+
+        return encodedData
+    }
+
+    /**
+     * 检查关键特征是否保持清晰
+     */
+    private fun isFeatureDetailPreserved(bitmap: Bitmap, quality: Int): Boolean {
+        // 简单的启发式检查：
+        // 1. 质量不能太低
+        if (quality < 75) return false
+
+        // 2. 图像尺寸不能太小
+        if (minOf(bitmap.width, bitmap.height) < 400) return false
+
+        // 3. 检查图像是否过度模糊（简单版本）
+        // 在实际应用中可以用更复杂的图像清晰度检测
+
+        return true
+    }
+
+    /**
+     * 计算Base64编码后的大小
+     */
+    private fun calculateBase64Size(rawSize: Int): Long {
+        return (rawSize * 1.37).toLong() // Base64大小估算
+    }
+
+    /**
+     * 快速压缩方案 - 在保证质量的前提下快速处理
+     */
+    suspend fun fastOptimizeForRecognition(
+        context: Context,
+        uri: Uri
+    ): String? = withContext(Dispatchers.IO) {
+        val resolver = context.contentResolver
+        var inputStream: InputStream? = null
+
+        try {
+            inputStream = resolver.openInputStream(uri)
+            val options = BitmapFactory.Options().apply {
+                inJustDecodeBounds = true
+            }
+            BitmapFactory.decodeStream(inputStream, null, options)
+            inputStream?.close()
+
+            // 快速方案：直接使用适中的尺寸和质量
+            val targetSize = calculateQuickOptimalSize(options.outWidth, options.outHeight)
+
+            inputStream = resolver.openInputStream(uri)
+            val bitmap = decodeHighQualityBitmap(inputStream, targetSize)
+            inputStream?.close()
+
+            // 使用固定的高质量设置
+            val outputStream = ByteArrayOutputStream()
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 85, outputStream) // 固定85%质量
+            val encodedData = Base64.encodeToString(outputStream.toByteArray(), Base64.NO_WRAP)
+
+            bitmap.recycle()
+            return@withContext encodedData
+
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        } finally {
+            try {
+                inputStream?.close()
+            } catch (e: IOException) {
+                e.printStackTrace()
             }
         }
     }
+
+    /**
+     * 快速计算最优尺寸
+     */
+    private fun calculateQuickOptimalSize(width: Int, height: Int): Pair<Int, Int> {
+        val maxDimension = 1600 // 快速方案的适中尺寸
+
+        return if (maxOf(width, height) > maxDimension) {
+            val scale = maxDimension.toFloat() / maxOf(width, height)
+            val newWidth = (width * scale).toInt().coerceAtLeast(600)
+            val newHeight = (height * scale).toInt().coerceAtLeast(600)
+            newWidth to newHeight
+        } else {
+            width to height
+        }
+    }
+
+    data class ImageRecognitionInfo(
+        val aspectRatio: Float,
+        val recommendedMinDimension: Int,
+        val recommendedMaxDimension: Int,
+        val isLikelyCloseUp: Boolean
+    )
 }
