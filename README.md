@@ -138,19 +138,5 @@ PlantKnow/
 
 ---
 
-## 👨‍💻 作者
-
-**李海龙 (Hailong Li)**  
-🎓 重庆科技大学 · 智能科学与技术  
-📧 Email: lihailong2077@163.com  
-🌐 GitHub: [skyli012]([https://github.com/your-username](https://github.com/skyli012))
-
----
-
-## 🪶 License
-
-This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
-
----
 
 > 💡 **PlantKnow** 旨在让 AI 识别技术更贴近生活，让自然知识触手可及。
