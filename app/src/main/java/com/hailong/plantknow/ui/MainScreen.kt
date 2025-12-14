@@ -9,9 +9,7 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -68,9 +66,7 @@ import com.hailong.plantknow.ui.component.PermissionExplanationDialog
 import com.hailong.plantknow.ui.component.PlantBasicInfoWithStickyHeader
 import com.hailong.plantknow.ui.component.PlantDetailsWithStickyHeader
 import com.hailong.plantknow.ui.component.WelcomeContent
-import com.hailong.plantknow.ui.detail.PlantDetailScreen
 import com.hailong.plantknow.ui.discover.PlantPost
-import com.hailong.plantknow.ui.screen.CommunityScreen
 import com.hailong.plantknow.ui.screen.ProfileScreen
 import com.hailong.plantknow.utils.ImageSaver
 import com.hailong.plantknow.utils.PermissionChecker
@@ -79,8 +75,6 @@ import com.hailong.plantknow.viewmodel.FavoriteViewModelFactory
 import com.hailong.plantknow.viewmodel.PlantViewModel
 import com.hailong.plantknow.viewmodel.PlantViewModelFactory
 import kotlinx.coroutines.launch
-import kotlin.math.abs
-import kotlin.math.max
 
 /**
  * 主屏幕Composable函数
@@ -127,9 +121,8 @@ fun MainScreen(
         )
     )
 
-    // 页面状态
+    // 页面状态 - 移除showCommunity状态
     var showProfile by remember { mutableStateOf(false) }
-    var showCommunity by remember { mutableStateOf(false) }
 
     // 滑动启用状态 - 简化管理
     var isSwipeEnabled by remember { mutableStateOf(true) }
@@ -141,13 +134,13 @@ fun MainScreen(
     // 权限检查器
     val permissionChecker = remember { PermissionChecker(context) }
 
-    // 滑动相关状态
+    // 滑动相关状态 - 现在只处理向右滑动（显示个人主页）
     val slideOffset = remember { Animatable(0f) }
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
     val maxSlideOffsetPx = with(LocalDensity.current) { screenWidth.toPx() }
     val coroutineScope = rememberCoroutineScope()
 
-    // 计算滑动进度 (-1f 到 1f)
+    // 计算滑动进度 (0f 到 1f，因为现在只向右滑动)
     val progress by remember {
         derivedStateOf {
             slideOffset.value / maxSlideOffsetPx
@@ -158,7 +151,7 @@ fun MainScreen(
     var selectedPlantPost by remember { mutableStateOf<PlantPost?>(null) }
     var showPlantDetail by remember { mutableStateOf(false) }
 
-    // 植物详情点击处理函数 - 修改为实际跳转逻辑
+    // 植物详情点击处理函数
     val handlePlantDetailClick: (PlantPost) -> Unit = { plantPost ->
         selectedPlantPost = plantPost
         showPlantDetail = true
@@ -172,17 +165,16 @@ fun MainScreen(
         }
     }
 
-    // 判断是否在三个主页面之间（个人主页、主页面、社区页面）
-    val isOnMainThreeScreens = remember {
+    // 判断是否允许滑动 - 只在主页和个人主页之间滑动
+    val isSwipeAllowed = remember {
         derivedStateOf {
-            // 在个人主页、主页面、社区页面之间可以滑动
-            // 只有在显示识别结果或加载中时禁用滑动
-            !hasRecognitionResult.value && !uiState.isLoading && isSwipeEnabled
+            // 只有在未显示识别结果、未加载中且滑动启用时，才允许向右滑动
+            !hasRecognitionResult.value && !uiState.isLoading && isSwipeEnabled && slideOffset.value >= 0f
         }
     }
 
     // 处理返回键
-    BackHandler(enabled = showProfile || showCommunity || hasRecognitionResult.value || showPlantDetail) {
+    BackHandler(enabled = showProfile || hasRecognitionResult.value || showPlantDetail) {
         when {
             showPlantDetail -> {
                 showPlantDetail = false
@@ -192,12 +184,6 @@ fun MainScreen(
                 coroutineScope.launch {
                     slideOffset.animateTo(0f, animationSpec = tween(300))
                     showProfile = false
-                }
-            }
-            showCommunity -> {
-                coroutineScope.launch {
-                    slideOffset.animateTo(0f, animationSpec = tween(300))
-                    showCommunity = false
                 }
             }
             hasRecognitionResult.value -> {
@@ -249,9 +235,9 @@ fun MainScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .pointerInput(isOnMainThreeScreens.value) {
-                    // 只有在三个主页面之间才允许滑动
-                    if (!isOnMainThreeScreens.value) return@pointerInput
+                .pointerInput(isSwipeAllowed.value) {
+                    // 只有在允许滑动时才启用滑动检测
+                    if (!isSwipeAllowed.value) return@pointerInput
 
                     detectHorizontalDragGestures(
                         onDragEnd = {
@@ -260,44 +246,33 @@ fun MainScreen(
                                 val threshold = maxSlideOffsetPx * 0.15f // 15% 阈值
 
                                 when {
-                                    // 向右滑动显示个人主页
+                                    // 向右滑动显示个人主页（只允许向右滑动）
                                     currentOffset > threshold && !showProfile -> {
                                         slideOffset.animateTo(maxSlideOffsetPx, animationSpec = tween(300))
                                         showProfile = true
-                                        showCommunity = false
-                                    }
-                                    // 向左滑动显示社区
-                                    currentOffset < -threshold && !showCommunity -> {
-                                        slideOffset.animateTo(-maxSlideOffsetPx, animationSpec = tween(300))
-                                        showCommunity = true
-                                        showProfile = false
                                     }
                                     // 从个人主页滑回主页
                                     currentOffset < (maxSlideOffsetPx - threshold) && showProfile -> {
                                         slideOffset.animateTo(0f, animationSpec = tween(300))
                                         showProfile = false
                                     }
-                                    // 从社区滑回主页
-                                    currentOffset > (-maxSlideOffsetPx + threshold) && showCommunity -> {
-                                        slideOffset.animateTo(0f, animationSpec = tween(300))
-                                        showCommunity = false
-                                    }
                                     else -> {
                                         // 滑动距离不足，回到原位置
-                                        when {
-                                            showProfile -> slideOffset.animateTo(maxSlideOffsetPx, animationSpec = tween(300))
-                                            showCommunity -> slideOffset.animateTo(-maxSlideOffsetPx, animationSpec = tween(300))
-                                            else -> slideOffset.animateTo(0f, animationSpec = tween(300))
+                                        if (showProfile) {
+                                            slideOffset.animateTo(maxSlideOffsetPx, animationSpec = tween(300))
+                                        } else {
+                                            slideOffset.animateTo(0f, animationSpec = tween(300))
                                         }
                                     }
                                 }
                             }
                         }
                     ) { change, dragAmount ->
+                        // 只允许向右滑动（dragAmount > 0）
                         val newOffset = when {
                             showProfile -> (slideOffset.value + dragAmount).coerceIn(0f, maxSlideOffsetPx)
-                            showCommunity -> (slideOffset.value + dragAmount).coerceIn(-maxSlideOffsetPx, 0f)
-                            else -> (slideOffset.value + dragAmount).coerceIn(-maxSlideOffsetPx, maxSlideOffsetPx)
+                            dragAmount > 0 -> (slideOffset.value + dragAmount).coerceIn(0f, maxSlideOffsetPx)
+                            else -> slideOffset.value // 不允许向左滑动
                         }
 
                         coroutineScope.launch {
@@ -308,34 +283,12 @@ fun MainScreen(
         ) {
             // ========== 页面渲染部分 ==========
 
-            // 1. 社区页面容器
+            // 1. 个人主页容器 - 从左侧滑入
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .graphicsLayer {
-                        translationX = max(0f, maxSlideOffsetPx + slideOffset.value)
-                        shadowElevation = if (progress < 0f) 16.dp.toPx() else 0f
-                    }
-            ) {
-                if (progress < 0f) {
-                    CommunityScreen(
-                        onBackClick = {
-                            coroutineScope.launch {
-                                slideOffset.animateTo(0f, animationSpec = tween(300))
-                                showCommunity = false
-                            }
-                        },
-                        onPlantDetailClick = handlePlantDetailClick
-                    )
-                }
-            }
-
-            // 2. 个人主页容器 - 从左侧滑入（保持不变）
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .graphicsLayer {
-                        // 修复：个人主页在左侧，向右滑动时进入
+                        // 个人主页在左侧，向右滑动时进入
                         translationX = -maxSlideOffsetPx + slideOffset.value
                     }
             ) {
@@ -355,18 +308,12 @@ fun MainScreen(
                 }
             }
 
-            // 3. 主页面容器 - 跟随滑动移动，社区页面覆盖时添加效果
+            // 2. 主页面容器 - 跟随滑动向右移动
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .graphicsLayer {
-                        translationX = slideOffset.value
-                        // 只有社区页面覆盖时主页面才变暗
-                        alpha = if (slideOffset.value < 0) {
-                            1f - (abs(slideOffset.value) / maxSlideOffsetPx) * 0.3f
-                        } else {
-                            1f
-                        }
+                        translationX = slideOffset.value.coerceAtLeast(0f) // 只允许向右移动
                     }
             ) {
                 // 主页面内容 - 植物识别功能
@@ -387,25 +334,12 @@ fun MainScreen(
                         coroutineScope.launch {
                             slideOffset.animateTo(maxSlideOffsetPx, animationSpec = tween(300))
                             showProfile = true
-                            showCommunity = false
                         }
                     },
                     onCommunityIconClick = {
-                        coroutineScope.launch {
-                            slideOffset.animateTo(-maxSlideOffsetPx, animationSpec = tween(300))
-                            showCommunity = true
-                            showProfile = false
-                        }
-                    }
-                )
-            }
-            // 4. 植物详情页面 - 覆盖在所有页面之上
-            if (showPlantDetail && selectedPlantPost != null) {
-                PlantDetailScreen(
-                    plantPost = selectedPlantPost!!,
-                    onBackClick = {
-                        showPlantDetail = false
-                        selectedPlantPost = null
+                        // 社区按钮点击逻辑 - 如果需要，可以在这里添加跳转到社区的方式
+                        // 例如：通过导航或其他方式，而不是滑动
+                        println("点击了社区图标")
                     }
                 )
             }
@@ -446,8 +380,6 @@ fun MainScreen(
     }
 }
 
-// MainContent 函数保持不变...
-
 @Composable
 private fun MainContent(
     uiState: PlantViewModel.PlantRecognitionState,
@@ -458,7 +390,7 @@ private fun MainContent(
     paddingValues: PaddingValues,
     onUserIconClick: () -> Unit,
     onCommunityIconClick: () -> Unit
-) { 
+) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -498,20 +430,12 @@ private fun MainContent(
 
                     Spacer(modifier = Modifier.weight(1f))
 
-                    // PlantKnow 文字
+                    // PlantKnow 文字 - 现在只是文字，不响应点击
                     Text(
                         text = "PlantKnow",
                         color = Color(0xFF364858),
                         fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier
-                            .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = null
-                            ) {
-                                onCommunityIconClick()
-                            }
-                            .padding(vertical = 8.dp, horizontal = 12.dp)
+                        fontWeight = FontWeight.Bold
                     )
                 }
             }
