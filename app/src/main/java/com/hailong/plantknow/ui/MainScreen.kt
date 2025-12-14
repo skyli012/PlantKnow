@@ -7,12 +7,10 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,8 +18,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -30,6 +26,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -39,13 +36,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -54,20 +48,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import coil.compose.rememberAsyncImagePainter
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import com.hailong.plantknow.R
 import com.hailong.plantknow.database.FavoritePlantDatabase
+import com.hailong.plantknow.model.PlantWithDetails
 import com.hailong.plantknow.repository.FavoriteRepository
 import com.hailong.plantknow.ui.component.ErrorCard
 import com.hailong.plantknow.ui.component.LoadingContent
 import com.hailong.plantknow.ui.component.PermissionDialog
 import com.hailong.plantknow.ui.component.PermissionExplanationDialog
-import com.hailong.plantknow.ui.component.PlantBasicInfoWithStickyHeader
-import com.hailong.plantknow.ui.component.PlantDetailsWithStickyHeader
 import com.hailong.plantknow.ui.component.WelcomeContent
 import com.hailong.plantknow.ui.discover.PlantPost
 import com.hailong.plantknow.ui.screen.ProfileScreen
+import com.hailong.plantknow.utils.AppScreen
 import com.hailong.plantknow.utils.ImageSaver
 import com.hailong.plantknow.utils.PermissionChecker
 import com.hailong.plantknow.viewmodel.FavoriteViewModel
@@ -121,8 +114,19 @@ fun MainScreen(
         )
     )
 
-    // 页面状态 - 移除showCommunity状态
+    // 页面导航状态
+    var currentScreen by remember { mutableStateOf(AppScreen.MAIN) }
     var showProfile by remember { mutableStateOf(false) }
+
+    // 植物详情数据
+    var plantDetailData by remember {
+        mutableStateOf<Pair<PlantWithDetails, Any?>?>(null)
+    }
+
+    // 选择的图片（用于加载页面显示）
+    var selectedImageForLoading by remember {
+        mutableStateOf<Any?>(null)
+    }
 
     // 滑动启用状态 - 简化管理
     var isSwipeEnabled by remember { mutableStateOf(true) }
@@ -151,43 +155,35 @@ fun MainScreen(
     var selectedPlantPost by remember { mutableStateOf<PlantPost?>(null) }
     var showPlantDetail by remember { mutableStateOf(false) }
 
-    // 植物详情点击处理函数
-    val handlePlantDetailClick: (PlantPost) -> Unit = { plantPost ->
-        selectedPlantPost = plantPost
-        showPlantDetail = true
-        println("跳转到植物详情: ${plantPost.desc}")
-    }
-
-    // 是否显示识别结果
-    val hasRecognitionResult = remember {
-        derivedStateOf {
-            uiState.plantWithDetails != null || uiState.result != null || uiState.error != null
-        }
-    }
-
     // 判断是否允许滑动 - 只在主页和个人主页之间滑动
     val isSwipeAllowed = remember {
         derivedStateOf {
-            // 只有在未显示识别结果、未加载中且滑动启用时，才允许向右滑动
-            !hasRecognitionResult.value && !uiState.isLoading && isSwipeEnabled && slideOffset.value >= 0f
+            // 只有在主页面、未加载中且滑动启用时，才允许向右滑动
+            currentScreen == AppScreen.MAIN && !uiState.isLoading && isSwipeEnabled && slideOffset.value >= 0f
         }
     }
 
     // 处理返回键
-    BackHandler(enabled = showProfile || hasRecognitionResult.value || showPlantDetail) {
-        when {
-            showPlantDetail -> {
-                showPlantDetail = false
-                selectedPlantPost = null
+    BackHandler(enabled = currentScreen != AppScreen.MAIN || showProfile || showPlantDetail) {
+        when (currentScreen) {
+            AppScreen.LOADING -> {
+                // 不允许在加载时返回
             }
-            showProfile -> {
-                coroutineScope.launch {
-                    slideOffset.animateTo(0f, animationSpec = tween(300))
-                    showProfile = false
-                }
-            }
-            hasRecognitionResult.value -> {
+            AppScreen.PLANT_DETAIL -> {
+                currentScreen = AppScreen.MAIN
                 viewModel.clearRecognitionResult()
+                plantDetailData = null
+            }
+            else -> {
+                if (showProfile) {
+                    coroutineScope.launch {
+                        slideOffset.animateTo(0f, animationSpec = tween(300))
+                        showProfile = false
+                    }
+                } else if (showPlantDetail) {
+                    showPlantDetail = false
+                    selectedPlantPost = null
+                }
             }
         }
     }
@@ -201,6 +197,8 @@ fun MainScreen(
         uri?.let {
             viewModel.selectImageFromGallery(it)
             viewModel.recognizePlantWithDetails()
+            selectedImageForLoading = it
+            currentScreen = AppScreen.LOADING
         }
     }
 
@@ -213,6 +211,8 @@ fun MainScreen(
         bmp?.let {
             viewModel.takePhoto(it)
             viewModel.recognizePlantWithDetails()
+            selectedImageForLoading = bmp
+            currentScreen = AppScreen.LOADING
         }
     }
 
@@ -228,121 +228,179 @@ fun MainScreen(
         showCameraPermissionDialog = false
     }
 
-    // 使用Scaffold布局作为根容器
-    Scaffold(
-        containerColor = Color.White
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .pointerInput(isSwipeAllowed.value) {
-                    // 只有在允许滑动时才启用滑动检测
-                    if (!isSwipeAllowed.value) return@pointerInput
+    // 监听识别状态变化
+    LaunchedEffect(uiState.isLoading, uiState.plantWithDetails, uiState.error) {
+        when {
+            // 正在加载中，保持在加载页面
+            uiState.isLoading -> {
+                if (currentScreen != AppScreen.LOADING && uiState.selectedImage != null) {
+                    currentScreen = AppScreen.LOADING
+                }
+            }
 
-                    detectHorizontalDragGestures(
-                        onDragEnd = {
-                            coroutineScope.launch {
-                                val currentOffset = slideOffset.value
-                                val threshold = maxSlideOffsetPx * 0.15f // 15% 阈值
+            // 识别完成，跳转到详情页面
+            uiState.plantWithDetails != null && currentScreen == AppScreen.LOADING -> {
+                plantDetailData = Pair(uiState.plantWithDetails!!, uiState.selectedImage)
+                currentScreen = AppScreen.PLANT_DETAIL
+                selectedImageForLoading = null
+            }
 
-                                when {
-                                    // 向右滑动显示个人主页（只允许向右滑动）
-                                    currentOffset > threshold && !showProfile -> {
-                                        slideOffset.animateTo(maxSlideOffsetPx, animationSpec = tween(300))
-                                        showProfile = true
-                                    }
-                                    // 从个人主页滑回主页
-                                    currentOffset < (maxSlideOffsetPx - threshold) && showProfile -> {
-                                        slideOffset.animateTo(0f, animationSpec = tween(300))
-                                        showProfile = false
-                                    }
-                                    else -> {
-                                        // 滑动距离不足，回到原位置
-                                        if (showProfile) {
-                                            slideOffset.animateTo(maxSlideOffsetPx, animationSpec = tween(300))
-                                        } else {
-                                            slideOffset.animateTo(0f, animationSpec = tween(300))
+            // 识别错误，返回主页面显示错误
+            uiState.error != null && currentScreen == AppScreen.LOADING -> {
+                currentScreen = AppScreen.MAIN
+                selectedImageForLoading = null
+            }
+        }
+    }
+
+    // 根据当前屏幕渲染不同内容
+    when (currentScreen) {
+        AppScreen.MAIN -> {
+            Scaffold(
+                containerColor = Color.White
+            ) { paddingValues ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues)
+                        .pointerInput(isSwipeAllowed.value) {
+                            // 只有在允许滑动时才启用滑动检测
+                            if (!isSwipeAllowed.value) return@pointerInput
+
+                            detectHorizontalDragGestures(
+                                onDragEnd = {
+                                    coroutineScope.launch {
+                                        val currentOffset = slideOffset.value
+                                        val threshold = maxSlideOffsetPx * 0.15f // 15% 阈值
+
+                                        when {
+                                            // 向右滑动显示个人主页（只允许向右滑动）
+                                            currentOffset > threshold && !showProfile -> {
+                                                slideOffset.animateTo(maxSlideOffsetPx, animationSpec = tween(300))
+                                                showProfile = true
+                                            }
+                                            // 从个人主页滑回主页
+                                            currentOffset < (maxSlideOffsetPx - threshold) && showProfile -> {
+                                                slideOffset.animateTo(0f, animationSpec = tween(300))
+                                                showProfile = false
+                                            }
+                                            else -> {
+                                                // 滑动距离不足，回到原位置
+                                                if (showProfile) {
+                                                    slideOffset.animateTo(maxSlideOffsetPx, animationSpec = tween(300))
+                                                } else {
+                                                    slideOffset.animateTo(0f, animationSpec = tween(300))
+                                                }
+                                            }
                                         }
                                     }
                                 }
+                            ) { change, dragAmount ->
+                                // 只允许向右滑动（dragAmount > 0）
+                                val newOffset = when {
+                                    showProfile -> (slideOffset.value + dragAmount).coerceIn(0f, maxSlideOffsetPx)
+                                    dragAmount > 0 -> (slideOffset.value + dragAmount).coerceIn(0f, maxSlideOffsetPx)
+                                    else -> slideOffset.value // 不允许向左滑动
+                                }
+
+                                coroutineScope.launch {
+                                    slideOffset.snapTo(newOffset)
+                                }
                             }
                         }
-                    ) { change, dragAmount ->
-                        // 只允许向右滑动（dragAmount > 0）
-                        val newOffset = when {
-                            showProfile -> (slideOffset.value + dragAmount).coerceIn(0f, maxSlideOffsetPx)
-                            dragAmount > 0 -> (slideOffset.value + dragAmount).coerceIn(0f, maxSlideOffsetPx)
-                            else -> slideOffset.value // 不允许向左滑动
-                        }
+                ) {
+                    // ========== 页面渲染部分 ==========
 
-                        coroutineScope.launch {
-                            slideOffset.snapTo(newOffset)
-                        }
-                    }
-                }
-        ) {
-            // ========== 页面渲染部分 ==========
-
-            // 1. 个人主页容器 - 从左侧滑入
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .graphicsLayer {
-                        // 个人主页在左侧，向右滑动时进入
-                        translationX = -maxSlideOffsetPx + slideOffset.value
-                    }
-            ) {
-                // 滑动超过30%才显示个人主页
-                if (progress > 0f) {
-                    ProfileScreen(
-                        onBackClick = {
-                            coroutineScope.launch {
-                                slideOffset.animateTo(0f, animationSpec = tween(300))
-                                showProfile = false
+                    // 1. 个人主页容器 - 从左侧滑入
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .graphicsLayer {
+                                // 个人主页在左侧，向右滑动时进入
+                                translationX = -maxSlideOffsetPx + slideOffset.value
                             }
-                        },
-                        onSwipeEnabledChange = { enabled ->
-                            isSwipeEnabled = enabled
+                    ) {
+                        // 滑动超过30%才显示个人主页
+                        if (progress > 0f) {
+                            ProfileScreen(
+                                onBackClick = {
+                                    coroutineScope.launch {
+                                        slideOffset.animateTo(0f, animationSpec = tween(300))
+                                        showProfile = false
+                                    }
+                                },
+                                onSwipeEnabledChange = { enabled ->
+                                    isSwipeEnabled = enabled
+                                }
+                            )
                         }
-                    )
+                    }
+
+                    // 2. 主页面容器 - 跟随滑动向右移动
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .graphicsLayer {
+                                translationX = slideOffset.value.coerceAtLeast(0f) // 只允许向右移动
+                            }
+                    ) {
+                        // 主页面内容 - 只负责图片选择
+                        MainContent(
+                            uiState = uiState,
+                            onPickImage = { pickImageLauncher.launch("image/*") },
+                            onTakePictureClick = {
+                                if (permissionChecker.hasCameraPermission()) {
+                                    takePictureLauncher.launch(null)
+                                } else {
+                                    showCameraPermissionDialog = true
+                                }
+                            },
+                            onUserIconClick = {
+                                coroutineScope.launch {
+                                    slideOffset.animateTo(maxSlideOffsetPx, animationSpec = tween(300))
+                                    showProfile = true
+                                }
+                            }
+                        )
+                    }
                 }
             }
+        }
 
-            // 2. 主页面容器 - 跟随滑动向右移动
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .graphicsLayer {
-                        translationX = slideOffset.value.coerceAtLeast(0f) // 只允许向右移动
+        AppScreen.LOADING -> {
+            // 独立的加载页面
+            LoadingScreen(
+                recognitionStep = uiState.recognitionStep,
+                selectedImage = selectedImageForLoading,
+                error = uiState.error,
+                onBackClick = {
+                    if (uiState.error != null) {
+                        currentScreen = AppScreen.MAIN
+                        viewModel.clearRecognitionResult()
+                        selectedImageForLoading = null
                     }
-            ) {
-                // 主页面内容 - 植物识别功能
-                MainContent(
-                    uiState = uiState,
+                }
+            )
+        }
+
+        AppScreen.PLANT_DETAIL -> {
+            plantDetailData?.let { (plantWithDetails, selectedImage) ->
+                PlantDetailScreen(
+                    plantWithDetails = plantWithDetails,
+                    selectedImage = selectedImage,
                     favoriteViewModel = favoriteViewModel,
-                    pickImageLauncher = pickImageLauncher,
-                    onTakePictureClick = {
-                        if (permissionChecker.hasCameraPermission()) {
-                            takePictureLauncher.launch(null)
-                        } else {
-                            showCameraPermissionDialog = true
-                        }
-                    },
-                    hasRecognitionResult = hasRecognitionResult.value,
-                    paddingValues = paddingValues,
-                    onUserIconClick = {
-                        coroutineScope.launch {
-                            slideOffset.animateTo(maxSlideOffsetPx, animationSpec = tween(300))
-                            showProfile = true
-                        }
-                    },
-                    onCommunityIconClick = {
-                        // 社区按钮点击逻辑 - 如果需要，可以在这里添加跳转到社区的方式
-                        // 例如：通过导航或其他方式，而不是滑动
-                        println("点击了社区图标")
+                    onBackClick = {
+                        currentScreen = AppScreen.MAIN
+                        viewModel.clearRecognitionResult()
+                        plantDetailData = null
                     }
                 )
             }
+        }
+
+        AppScreen.PROFILE -> {
+            // 个人主页作为独立页面，通过滑动显示
+            currentScreen = AppScreen.MAIN
         }
     }
 
@@ -383,112 +441,55 @@ fun MainScreen(
 @Composable
 private fun MainContent(
     uiState: PlantViewModel.PlantRecognitionState,
-    favoriteViewModel: FavoriteViewModel,
-    pickImageLauncher: androidx.activity.compose.ManagedActivityResultLauncher<String, Uri?>,
+    onPickImage: () -> Unit,
     onTakePictureClick: () -> Unit,
-    hasRecognitionResult: Boolean,
-    paddingValues: PaddingValues,
     onUserIconClick: () -> Unit,
-    onCommunityIconClick: () -> Unit
 ) {
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.White)
-            .padding(paddingValues)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 20.dp)
         ) {
-            // 顶部区域 - 只在初始状态显示
-            if (uiState.selectedImage == null && !uiState.isLoading && !hasRecognitionResult) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
+            // 顶部区域
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 16.dp)
+            ) {
+                IconButton(
+                    onClick = onUserIconClick,
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 16.dp)
-                ) {
-                    // 用户图标
-                    IconButton(
-                        onClick = onUserIconClick,
-                        modifier = Modifier
-                            .size(48.dp)
-                            .background(
-                                color = Color.White.copy(alpha = 0.1f),
-                                shape = RoundedCornerShape(12.dp)
-                            )
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.home_user),
-                            contentDescription = "个人主页",
-                            tint = Color(0xFF364858),
-                            modifier = Modifier.size(24.dp)
+                        .size(48.dp)
+                        .background(
+                            color = Color.White.copy(alpha = 0.1f),
+                            shape = RoundedCornerShape(12.dp)
                         )
-                    }
-
-                    Spacer(modifier = Modifier.weight(1f))
-
-                    // PlantKnow 文字 - 现在只是文字，不响应点击
-                    Text(
-                        text = "PlantKnow",
-                        color = Color(0xFF364858),
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-
-            // 图片预览区域
-            if (uiState.selectedImage != null) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .wrapContentHeight()
-                        .padding(top = 30.dp , bottom = 20.dp)
                 ) {
-                    when (val image = uiState.selectedImage) {
-                        is Bitmap -> {
-                            Image(
-                                bitmap = image.asImageBitmap(),
-                                contentDescription = "Preview",
-                                modifier = Modifier
-                                    .size(80.dp)
-                                    .padding(2.dp)
-                                    .clip(RoundedCornerShape(12.dp)),
-                                contentScale = ContentScale.Crop
-                            )
-                        }
-                        is Uri -> {
-                            Image(
-                                painter = rememberAsyncImagePainter(image),
-                                contentDescription = "Preview",
-                                modifier = Modifier
-                                    .size(80.dp)
-                                    .padding(2.dp)
-                                    .clip(RoundedCornerShape(12.dp)),
-                                contentScale = ContentScale.Crop
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-
-                    Text(
-                        text = when {
-                            uiState.isLoading -> uiState.recognitionStep
-                            uiState.error != null -> "识别失败"
-                            uiState.plantWithDetails != null -> "识别完成"
-                            else -> "已选择图片"
-                        },
-                        color = Color(0xFF666666),
-                        fontSize = 14.sp,
-                        modifier = Modifier.weight(1f)
+                    Icon(
+                        painter = painterResource(id = R.drawable.home_user),
+                        contentDescription = "个人主页",
+                        tint = Color(0xFF364858),
+                        modifier = Modifier.size(24.dp)
                     )
                 }
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                Text(
+                    text = "PlantKnow",
+                    color = Color(0xFF364858),
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
             }
 
-            // 中部：主要文本展示区域
+            // 中部：欢迎内容 - 只显示欢迎内容或错误
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -500,15 +501,11 @@ private fun MainContent(
                         .padding(5.dp)
                 ) {
                     when {
-                        uiState.selectedImage == null -> WelcomeContent()
-                        uiState.isLoading -> LoadingContent(uiState.recognitionStep)
-                        uiState.plantWithDetails != null -> PlantDetailsWithStickyHeader(
-                            plantWithDetails = uiState.plantWithDetails!!,
-                            favoriteViewModel = favoriteViewModel,
-                            selectedImage = uiState.selectedImage
-                        )
-                        uiState.result != null -> PlantBasicInfoWithStickyHeader(plant = uiState.result!!)
-                        uiState.error != null -> ErrorCard(message = uiState.error!!)
+                        uiState.error != null -> {
+                            // 错误提示
+                            ErrorCard(message = uiState.error!!)
+                        }
+                        else -> WelcomeContent()
                     }
                 }
 
@@ -530,42 +527,105 @@ private fun MainContent(
                 )
             }
 
-            // 底部：操作按钮区域
-            if (uiState.selectedImage == null || hasRecognitionResult) {
-                Row(
+            // 底部：操作按钮区域 - 始终显示
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 24.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(
+                    onClick = onPickImage,
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 24.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                        .weight(1f)
+                        .height(40.dp)
                 ) {
-                    IconButton(
-                        onClick = { pickImageLauncher.launch("image/*") },
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(40.dp)
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.home_photo),
-                            contentDescription = "相册",
-                            tint = Color(0xFF364858)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.weight(1f))
-
-                    IconButton(
-                        onClick = onTakePictureClick,
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(28.dp)
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.home_camera),
-                            contentDescription = "拍照",
-                            tint = Color(0xFF364858)
-                        )
-                    }
+                    Icon(
+                        painter = painterResource(id = R.drawable.home_photo),
+                        contentDescription = "相册",
+                        tint = Color(0xFF364858)
+                    )
                 }
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                IconButton(
+                    onClick = onTakePictureClick,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(28.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.home_camera),
+                        contentDescription = "拍照",
+                        tint = Color(0xFF364858)
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 独立的加载页面
+ */
+@Composable
+fun LoadingScreen(
+    recognitionStep: String,
+    selectedImage: Any?,
+    error: String?,
+    onBackClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.White)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // 返回按钮
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 24.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (error != null) {
+                    IconButton(
+                        onClick = onBackClick,
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_community), // 需要返回图标
+                            contentDescription = "返回",
+                            tint = Color(0xFF364858)
+                        )
+                    }
+                    Text(
+                        text = "返回",
+                        color = Color(0xFF364858),
+                        fontSize = 16.sp,
+                        modifier = Modifier.padding(start = 8.dp)
+                    )
+                }
+            }
+
+            // 加载内容
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                LoadingContent(
+                    recognitionStep = recognitionStep,
+                    isFullScreen = true,
+                    selectedImage = selectedImage
+                )
             }
         }
     }
