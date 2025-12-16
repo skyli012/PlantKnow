@@ -1,11 +1,11 @@
 package com.hailong.plantknow.database
 
+import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import android.content.Context
-import com.hailong.plantknow.database.dao.UserProfileDao
 import com.hailong.plantknow.data.entity.UserProfile
+import com.hailong.plantknow.database.dao.UserProfileDao
 
 @Database(
     entities = [UserProfile::class],

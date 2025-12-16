@@ -206,19 +206,28 @@ class PlantRecognitionRepository(
         Log.d("PlantRepository", "开始调用阿里云API获取植物详情: $plantName")
         return@withContext try {
             val prompt = """
-                请提供以下植物的详细信息：
-                植物名称：$plantName
-                
-                请按照以下结构提供信息：
-                1. 植物简介（50-100字）
-                2. 科属分类
-                3. 形态特征  
-                4. 植物文化
-                5. 趣味知识
-                
-                请确保信息准确、详细，适合植物爱好者阅读。
-                要求：
-                1、你返回的时候植物简介上不要加上(50-100字)  2、除了小标题以外，其他的内容不要用任何格式 3、植物简介里面加上学名别名 4、回答的格式 以"小标题:内容"的格式回答，小标题就是前面的植物简介、科属分类..
+            请提供以下植物的详细信息，所有内容必须为中文，且严格**必须**按照指定格式输出：
+            植物名称：$plantName
+            
+            **重要格式要求**：
+            1. 每一行必须是 **"小标题: 内容"** 格式，冒号使用英文冒号
+            2. 每个小标题必须完全使用以下列表中的名称：
+               植物简介、科属分类、形态特征、植物文化、趣味知识、水、阳光、土壤、温度、肥料
+            3. 每一行单独一行，不要合并多个项目
+            
+            **输出示例**：
+            植物简介: 紫丁香是一种落叶灌木，学名Syringa vulgaris...
+            科属分类: 木犀科 丁香属
+            形态特征: 植株高度可达4-6米...
+            植物文化: 在中国文化中象征春天与浪漫...
+            趣味知识: 紫丁香的花香有助缓解压力...
+            水: 喜欢持续湿润的土壤...
+            阳光: 需要充足阳光...
+            土壤: 喜欢排水良好的肥沃土壤...
+            温度: 耐寒植物...
+            肥料: 春季施一次通用肥料...
+            
+            **现在请为【$plantName】按照上述格式提供信息：**
             """.trimIndent()
 
             val messages = listOf(
@@ -237,7 +246,17 @@ class PlantRecognitionRepository(
 
             if (response.choices.isNotEmpty()) {
                 val content = response.choices[0].message.content
-                Log.d("PlantRepository", "阿里云API调用成功，返回内容长度: ${content.length}")
+
+                // ✅ 重要：在这里立即打印原始返回内容
+                Log.d("PlantRepository", "✅ AI原始返回内容（开始）==========")
+                Log.d("PlantRepository", "返回内容长度: ${content.length} 字符")
+                Log.d("PlantRepository", "完整内容:")
+                // 按行打印，方便查看格式
+                content.split("\n").forEachIndexed { index, line ->
+                    Log.d("PlantRepository", "行 ${index + 1}: '$line'")
+                }
+                Log.d("PlantRepository", "✅ AI原始返回内容（结束）==========")
+
                 Result.Success(content)
             } else {
                 Log.e("PlantRepository", "阿里云API返回空结果")
