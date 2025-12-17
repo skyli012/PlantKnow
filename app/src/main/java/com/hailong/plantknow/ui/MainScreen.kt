@@ -393,6 +393,13 @@ fun MainScreen(
                         currentScreen = AppScreen.MAIN
                         viewModel.clearRecognitionResult()
                         plantDetailData = null
+                    },
+                    onReturnHomeClick = {
+                        // 当用户点击"重新识别"按钮时，返回主页
+                        currentScreen = AppScreen.MAIN
+                        viewModel.clearRecognitionResult()
+                        plantDetailData = null
+                        // 你可以在这里添加其他清理或重置逻辑
                     }
                 )
             }

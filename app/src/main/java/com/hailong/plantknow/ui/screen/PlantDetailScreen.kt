@@ -6,6 +6,7 @@ import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -63,7 +64,9 @@ fun PlantDetailScreen(
     plantWithDetails: PlantWithDetails,
     selectedImage: Any?,
     favoriteViewModel: FavoriteViewModel,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    // 新增参数：返回主页的回调
+    onReturnHomeClick: () -> Unit
 ) {
     // 添加调试信息，确认接收到的数据
     LaunchedEffect(plantWithDetails) {
@@ -110,7 +113,8 @@ fun PlantDetailScreen(
         )
 
         ScanAnotherPlantButton(
-            modifier = Modifier.align(Alignment.BottomCenter)
+            modifier = Modifier.align(Alignment.BottomCenter),
+            onReturnHomeClick = onReturnHomeClick  // 传递回调
         )
     }
 }
@@ -179,15 +183,19 @@ fun PlantImageHeader(
         }
 
         // 收藏按钮（新增）
-        Box(
+        IconButton(
+            onClick = onFavoriteClick,
             modifier = Modifier
-                .padding(top = 12.dp, end = 60.dp) // 放在分享按钮左侧
+                .padding(top = 12.dp, end = 60.dp)
                 .align(Alignment.TopEnd)
+                .background(Color.Black.copy(0.35f), RoundedCornerShape(50))
+                .size(40.dp)
         ) {
+            // 这里直接使用 FavoriteButton 作为 IconButton 的内容
             FavoriteButton(
                 isFavorited = isFavorited,
                 onFavoriteClick = onFavoriteClick,
-                modifier = Modifier.size(40.dp)
+                modifier = Modifier.size(26.dp)
             )
         }
 
@@ -288,7 +296,7 @@ fun PlantDetailSheet(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 8.dp)
+                        .padding(top = 0.dp)
                         .height(1.dp)
                         .background(Color(0xFFEEEEEE))
                 )
@@ -338,7 +346,12 @@ fun TabItem(
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
-            .clickable { onSelect() }
+            .clickable(
+                enabled = true, // 保持可点击
+                onClick = onSelect,
+                indication = null, // ✅ 关键：取消涟漪效果
+                interactionSource = remember { MutableInteractionSource() }
+            )
             .padding(vertical = 8.dp)
     ) {
         Text(
@@ -359,7 +372,10 @@ fun TabItem(
 }
 
 @Composable
-fun ScanAnotherPlantButton(modifier: Modifier = Modifier) {
+fun ScanAnotherPlantButton(
+    modifier: Modifier = Modifier,
+    onReturnHomeClick: () -> Unit  // 新增参数
+) {
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -368,7 +384,8 @@ fun ScanAnotherPlantButton(modifier: Modifier = Modifier) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(52.dp),
+                .height(52.dp)
+                .clickable(onClick = onReturnHomeClick),  // 添加点击事件
             colors = CardDefaults.cardColors(containerColor = Color.Black),
             shape = RoundedCornerShape(12.dp)
         ) {
@@ -378,7 +395,7 @@ fun ScanAnotherPlantButton(modifier: Modifier = Modifier) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Scan Another Plant",
+                    text = "重新识别",
                     color = Color.White,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold
@@ -562,13 +579,13 @@ fun CareItemWithIcon(data: CareItemData) {
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 14.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.Top // 让Row整体向上对齐
         ) {
             Box(
                 modifier = Modifier
                     .width(60.dp)
                     .fillMaxHeight(),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.TopCenter // 让图标向上居中
             ) {
                 Box(
                     modifier = Modifier
@@ -627,7 +644,6 @@ fun CareItemWithIcon(data: CareItemData) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp)
                 .height(0.5.dp)
                 .background(Color(0xFFF5F3F3))
         )

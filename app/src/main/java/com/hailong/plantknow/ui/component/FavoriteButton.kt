@@ -1,14 +1,15 @@
 package com.hailong.plantknow.ui.component
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Icon
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -30,7 +31,7 @@ fun FavoriteButton(
     val tintColor = if (isFavorited) {
         Color(0xFFFF5252) // 红色 - 已收藏
     } else {
-        Color(0xFF9E9E9E) // 灰色 - 未收藏
+        Color(0xFFFFFFFF) // 灰色 - 未收藏
     }
 
     val iconRes = if (isFavorited) {
