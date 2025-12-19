@@ -44,7 +44,6 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -482,18 +481,25 @@ private fun MainContent(
                         painter = painterResource(id = R.drawable.home_user),
                         contentDescription = "个人主页",
                         tint = Color(0xFF364858),
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(20.dp)
                     )
                 }
 
                 Spacer(modifier = Modifier.weight(1f))
 
-                Text(
-                    text = "PlantKnow",
-                    color = Color(0xFF364858),
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                IconButton(
+                    onClick = {
+                        // TODO: 点击事件
+                    },
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.home_information), // 使用自定义图片
+                        contentDescription = "消息提醒",
+                        tint = Color.Unspecified, // 保持原图颜色
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
 
             // 中部：欢迎内容 - 只显示欢迎内容或错误
