@@ -30,7 +30,10 @@ object AuthHelper {
     fun initialize(context: Context) {
         Log.d("AuthHelper", "初始化 SharedPreferences")
         sharedPreferences = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
-        Log.d("AuthHelper", "SharedPreferences 初始化完成")
+
+        // ✅ 新增：预热 SharedPreferences，触发首次磁盘读取
+        sharedPreferences.all  // ⚠️ 触发 SharedPreferences 的内存缓存初始化
+        Log.d("AuthHelper", "SharedPreferences 预热完成")
     }
 
     /**
@@ -49,7 +52,8 @@ object AuthHelper {
         if (cachedToken != null && currentTimestamp < expiresAt) {
             // Token有效，直接返回
             Log.d("AuthHelper", "使用缓存的 Token")
-            return@withContext "$cachedToken"
+            Log.d("AuthHelper", "缓存Token长度: ${cachedToken.length}")
+            return@withContext cachedToken
         }
 
         Log.d("AuthHelper", "Token已过期或不存在，获取新Token")
@@ -78,7 +82,8 @@ object AuthHelper {
                     .apply()
 
                 Log.d("AuthHelper", "Token已缓存")
-                return@withContext "Bearer $token"
+                Log.d("AuthHelper", "Token长度: ${token.length}")
+                return@withContext token
             } else {
                 Log.e("AuthHelper", "获取Token失败: ${response.code()}, ${response.errorBody()?.string()}")
                 throw Exception("Failed to get access token: ${response.errorBody()?.string()}")

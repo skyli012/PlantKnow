@@ -120,16 +120,26 @@ class PlantRecognitionRepository(
     private suspend fun callRecognitionApi(base64Image: String): Result<PlantResult> = withContext(Dispatchers.IO) {
         try {
             val pureToken = AuthHelper.getValidAccessToken()
+            Log.d("PlantRepository", "获取的Token: ${pureToken.substring(0, Math.min(20, pureToken.length))}...（长度: ${pureToken.length}）")
+            Log.d("PlantRepository", "发送的Base64数据长度: ${base64Image.length}")
 
             val response = ApiClient.baiduApiService.recognizePlant(
                 accessToken = pureToken,
                 image = base64Image,
                 baikeNum = 1
             )
+            
+            Log.d("PlantRepository", "API响应状态: ${response.code()}")
+            Log.d("PlantRepository", "API响应体: ${response.body()}")
 
             if (response.isSuccessful && response.body() != null) {
                 val recognitionResponse = response.body()!!
                 val results = recognitionResponse.results
+                Log.d("PlantRepository", "results值: $results")
+                Log.d("PlantRepository", "results是否为null: ${results == null}")
+                if (results != null) {
+                    Log.d("PlantRepository", "results数量: ${results.size}")
+                }
 
                 if (results != null && results.isNotEmpty()) {
                     results.firstOrNull()?.let { plantResult ->
@@ -141,10 +151,13 @@ class PlantRecognitionRepository(
                         Result.Success(plantResult)
                     } ?: Result.Error(Exception("No valid plant data returned from the API."))
                 } else {
+                    Log.e("PlantRepository", "API返回结果为空。results=$results")
                     Result.Error(Exception("API返回结果为空。请确保图片包含清晰的植物特征。"))
                 }
             } else {
                 val errorBody = response.errorBody()?.string()
+                Log.e("PlantRepository", "API调用失败: ${response.code()}, body=${response.body()}")
+                Log.e("PlantRepository", "错误响应: $errorBody")
                 Result.Error(Exception("API调用失败: ${response.code()}, $errorBody"))
             }
         } catch (e: Exception) {
