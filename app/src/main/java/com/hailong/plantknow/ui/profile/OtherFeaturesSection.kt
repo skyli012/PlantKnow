@@ -1,5 +1,6 @@
 package com.hailong.plantknow.ui.profile
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -13,22 +14,19 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -37,6 +35,7 @@ import androidx.compose.ui.unit.sp
 fun OtherFeaturesSection(
     onAboutClick: () -> Unit = {}
 ) {
+    val context = LocalContext.current
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -46,7 +45,7 @@ fun OtherFeaturesSection(
             text = "更多功能",
             fontSize = 18.sp,
             fontWeight = FontWeight.SemiBold,
-            color = Color(0xFF2C3E50),
+            color = Color(0xFF000000),
             modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
         )
 
@@ -64,7 +63,13 @@ fun OtherFeaturesSection(
                 icon = Icons.Default.History,
                 iconColor = Color(0xFF4ECDC4),
                 showDivider = true,
-                onClick = { /* TODO */ }
+                onClick = {
+                    Toast.makeText(
+                        context,
+                        "还在开发中",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
             )
 
             FeatureItem(
@@ -73,7 +78,13 @@ fun OtherFeaturesSection(
                 icon = Icons.Default.Settings,
                 iconColor = Color(0xFF6C5CE7),
                 showDivider = true,
-                onClick = { /* TODO */ }
+                onClick = {
+                    Toast.makeText(
+                        context,
+                        "还在开发中",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
             )
 
             FeatureItem(
@@ -127,7 +138,7 @@ private fun FeatureItem(
                     text = title,
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Medium,
-                    color = Color(0xFF2C3E50)
+                    color = Color(0xFF000000)
                 )
 
                 Spacer(modifier = Modifier.height(2.dp))
@@ -135,14 +146,14 @@ private fun FeatureItem(
                 Text(
                     text = description,
                     fontSize = 12.sp,
-                    color = Color(0xFF7F8C8D)
+                    color = Color(0xFF000000)
                 )
             }
 
             Icon(
                 imageVector = Icons.Default.ChevronRight,
                 contentDescription = "进入",
-                tint = Color(0xFF95A5A6),
+                tint = Color(0xFF000000),
                 modifier = Modifier.size(18.dp)
             )
         }

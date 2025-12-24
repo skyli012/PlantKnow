@@ -1,6 +1,8 @@
 package com.hailong.plantknow.ui.profile
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,17 +19,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import com.hailong.plantknow.ui.component.UserProfileDialog
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -37,11 +36,12 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.hailong.plantknow.ui.component.EditProfileDialog
+import com.hailong.plantknow.ui.component.UserProfileDialog
 import com.hailong.plantknow.viewmodel.FavoriteViewModel
-import com.hailong.plantknow.viewmodel.UserStatsViewModel
-import com.hailong.plantknow.viewmodel.UserStatsViewModelFactory
 import com.hailong.plantknow.viewmodel.UserProfileViewModel
 import com.hailong.plantknow.viewmodel.UserProfileViewModelFactory
+import com.hailong.plantknow.viewmodel.UserStatsViewModel
+import com.hailong.plantknow.viewmodel.UserStatsViewModelFactory
 
 @Composable
 fun UserInfoCard(
@@ -118,7 +118,7 @@ fun UserInfoCard(
                     text = userProfile?.name ?: "Skyyy",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF2C3E50)
+                    color = Color(0xFF000000)
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
@@ -126,7 +126,7 @@ fun UserInfoCard(
                 Text(
                     text = userProfile?.bio ?: "热爱大自然，喜欢探索各种植物奥秘",
                     fontSize = 13.sp,
-                    color = Color(0xFF7F8C8D)
+                    color = Color(0xFF000000)
                 )
             }
         }

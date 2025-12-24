@@ -2,6 +2,7 @@ package com.hailong.plantknow.ui
 
 import android.graphics.Bitmap
 import android.net.Uri
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -67,7 +68,6 @@ import com.hailong.plantknow.viewmodel.FavoriteViewModelFactory
 import com.hailong.plantknow.viewmodel.PlantViewModel
 import com.hailong.plantknow.viewmodel.PlantViewModelFactory
 import kotlinx.coroutines.launch
-
 /**
  * 主屏幕Composable函数
  * 负责图片选择、预览和AI植物识别结果显示
@@ -451,6 +451,7 @@ private fun MainContent(
     onTakePictureClick: () -> Unit,
     onUserIconClick: () -> Unit,
 ) {
+    val context = LocalContext.current
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -480,7 +481,7 @@ private fun MainContent(
                     Icon(
                         painter = painterResource(id = R.drawable.home_user),
                         contentDescription = "个人主页",
-                        tint = Color(0xFF364858),
+                        tint = Color(0xFF000000),
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -489,14 +490,18 @@ private fun MainContent(
 
                 IconButton(
                     onClick = {
-                        // TODO: 点击事件
+                        Toast.makeText(
+                            context,
+                            "还在开发中",
+                            Toast.LENGTH_SHORT
+                        ).show()
                     },
                     modifier = Modifier.size(32.dp)
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.home_information), // 使用自定义图片
                         contentDescription = "消息提醒",
-                        tint = Color.Unspecified, // 保持原图颜色
+                        tint = Color(0xFF000000), // 保持原图颜色
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -551,12 +556,12 @@ private fun MainContent(
                     onClick = onPickImage,
                     modifier = Modifier
                         .weight(1f)
-                        .height(40.dp)
+                        .height(35.dp)
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.home_photo),
                         contentDescription = "相册",
-                        tint = Color(0xFF364858)
+                        tint = Color(0xFF000000)
                     )
                 }
 
@@ -566,12 +571,12 @@ private fun MainContent(
                     onClick = onTakePictureClick,
                     modifier = Modifier
                         .weight(1f)
-                        .height(28.dp)
+                        .height(23.dp)
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.home_camera),
                         contentDescription = "拍照",
-                        tint = Color(0xFF364858)
+                        tint = Color(0xFF000000)
                     )
                 }
             }
@@ -615,12 +620,12 @@ fun LoadingScreen(
                         Icon(
                             painter = painterResource(id = R.drawable.ic_community), // 需要返回图标
                             contentDescription = "返回",
-                            tint = Color(0xFF364858)
+                            tint = Color(0xFF000000)
                         )
                     }
                     Text(
                         text = "返回",
-                        color = Color(0xFF364858),
+                        color = Color(0xFF000000),
                         fontSize = 16.sp,
                         modifier = Modifier.padding(start = 8.dp)
                     )

@@ -12,8 +12,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -51,7 +51,7 @@ fun FavoriteEntryCard(onFavoritesClick: () -> Unit) {
                 text = "我的收藏",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = Color(0xFF2C3E50)
+                color = Color(0xFF000000)
             )
 
             Spacer(modifier = Modifier.height(4.dp))
@@ -59,14 +59,14 @@ fun FavoriteEntryCard(onFavoritesClick: () -> Unit) {
             Text(
                 text = "查看您收藏的所有植物",
                 fontSize = 13.sp,
-                color = Color(0xFF7F8C8D)
+                color = Color(0xFF000000)
             )
         }
 
         Icon(
             imageVector = Icons.Default.ChevronRight,
             contentDescription = "进入",
-            tint = Color(0xFF95A5A6),
+            tint = Color(0xFF000000),
             modifier = Modifier.size(20.dp)
         )
     }

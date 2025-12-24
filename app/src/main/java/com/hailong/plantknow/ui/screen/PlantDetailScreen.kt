@@ -258,11 +258,9 @@ fun PlantDetailSheet(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(20.dp)
+                .padding(10.dp)
                 .verticalScroll(rememberScrollState())
         ) {
-            // 这里移除了收藏按钮
-
             Spacer(modifier = Modifier.height(12.dp))
 
             // ✅ 修改：外面只显示植物简介内容（不显示标题）
@@ -273,7 +271,7 @@ fun PlantDetailSheet(
                     color = Color(0xFF666666),
                     lineHeight = 22.sp
                 )
-                Spacer(modifier = Modifier.height(12.dp))
+//                Spacer(modifier = Modifier.height(12.dp))
             } else {
                 // 兜底：如果没有植物简介，显示完整描述
                 Text(
@@ -284,7 +282,7 @@ fun PlantDetailSheet(
                 )
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             // 可切换的Tab
             Column {
@@ -384,7 +382,7 @@ fun ScanAnotherPlantButton(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(52.dp)
+                .height(46.dp)
                 .clickable(onClick = onReturnHomeClick),  // 添加点击事件
             colors = CardDefaults.cardColors(containerColor = Color.Black),
             shape = RoundedCornerShape(12.dp)
