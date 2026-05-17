@@ -249,14 +249,17 @@ class PlantRecognitionRepository(
             )
 
             val request = AliyunChatRequest(
-                model = Constants.QWEN_FLASH_MODEL,
+                model = Constants.QWEN_PLUS_MODEL,
                 messages = messages,
                 stream = false,
                 extra_body = mapOf("enable_thinking" to true)
             )
 
             Log.d("PlantRepository", "发送阿里云API请求...")
-            val response = ApiClient.aliyunApiService.chatCompletion(request)
+            val response = ApiClient.aliyunApiService.chatCompletion(
+                auth = "Bearer ${Constants.DASHSCOPE_API_KEY}",
+                request = request
+            )
 
             if (response.choices.isNotEmpty()) {
                 val content = response.choices[0].message.content

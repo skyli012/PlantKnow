@@ -7,8 +7,8 @@ import com.hailong.plantknow.utils.Constants
  * 用于构建与阿里云大语言模型交互的请求和响应数据结构
  */
 data class AliyunChatRequest(
-    // 指定使用的AI模型，默认使用千问Flash版本（性能与成本均衡）
-    val model: String = Constants.QWEN_FLASH_MODEL,
+    // 指定使用的AI模型，默认使用千问Plus版本（支持思维链，且性价比高）
+    val model: String = Constants.QWEN_PLUS_MODEL,
 
     // 对话消息列表，按时间顺序排列的多轮对话内容
     val messages: List<ChatMessage>,
@@ -30,7 +30,10 @@ data class ChatMessage(
     val role: String,
 
     // 消息具体内容，支持文本、代码等多种格式
-    val content: String
+    val content: String,
+
+    // 新增：深度思考内容
+    val reasoning_content: String? = null
 )
 
 /**
